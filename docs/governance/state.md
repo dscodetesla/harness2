@@ -1,6 +1,6 @@
 # State (2026-11-24)
 
-- **X99MG**: `/home/user/src/harness2` installed, JobBench setup completed (`566/566` files), `harness2-local` active.
-- **dell-T3500**: Deploying `/home/user/src/harness2` from `dscodetesla/harness2` (`local/x99mg-integration`) + `harness2-setup jb`.
-- **GitHub Fork**: `https://github.com/dscodetesla/harness2` syncing `local/x99mg-integration`.
+- **X99MG** (`/home/user/src/harness2`): `local/x99mg-integration` synced, `Python 3.12.14` `.venv`, **78/78 tests OK** (38.833 s), `harness2-setup jb` RC=0 (566/566 files), `harness2-check --bench jb` -> `Ready: jb/oc; 65 tasks`, `--dry-run` PASS, Ollama `/v1/models` 200 OK.
+- **dell-T3500** (`/home/user/src/harness2`): `local/x99mg-integration` synced, `Python 3.12.14` `.venv`, `harness2-setup jb` RC=0 (566/566 files), `harness2-check --bench jb` -> `Ready: jb/oc; 65 tasks`, `--dry-run` PASS, `demo --k 2` PASS, Ollama `/v1/models` 200 OK.
+- **GitHub Fork**: `https://github.com/dscodetesla/harness2` (`local/x99mg-integration` up to date; `main` kept clean at upstream `6868817`).
 - **Paid API Calls**: 0 executed.

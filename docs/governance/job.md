@@ -1,5 +1,6 @@
 # Job Log (2026-11-24)
 
-- `x99mg-jb-setup`: `harness2-setup jb` exited `0` (opencode `23fb5e0`, `bun@1.3.11`, `job-bench-eval` venv, 566 dataset files).
-- `x99mg-tests`: 73 baseline+codex + 4 cluster_fixes + 1 rf_fpga_adapter = 78 unit tests target.
-- `dell-t3500-rollout`: clone `dscodetesla/harness2`, checkout `local/x99mg-integration`, create Python 3.12 `.venv`, run `harness2-setup jb` and `harness2-local test`.
+- `x99mg-jb-setup`: `harness2-setup jb` RC=0 (566/566 files); `harness2-check --bench jb` -> `Ready: jb/oc; 65 tasks`.
+- `x99mg-tests`: `harness2-local test` -> 78/78 tests OK (38.833 s).
+- `dell-t3500-jb-setup`: `harness2-setup jb` RC=0 (566/566 files); `harness2-check --bench jb` -> `Ready: jb/oc; 65 tasks`; `--dry-run` PASS.
+- `github-fork-sync`: `local/x99mg-integration` pushed to `https://github.com/dscodetesla/harness2`.
