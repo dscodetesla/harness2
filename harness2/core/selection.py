@@ -31,9 +31,9 @@ from .proposer import Proposer, ProposerError
 from .spec import BenchmarkAdapter, BenchPrompts, RunView, resolve_prompts
 
 _CHOICE = re.compile(r"```choice\s*\n?\s*([A-Za-z0-9_-]+)\s*\n?\s*```", re.S)
-_WHY = re.compile(r"<why>(.*?)</why>", re.S)
-_EXP = re.compile(r"<experience>(.*?)</experience>", re.S)
-_EDITS = re.compile(r"<edits>(.*?)</edits>", re.S)
+_WHY = re.compile(r"<why>(.*?)</why>", re.S | re.I)
+_EXP = re.compile(r"<experience>(.*?)</experience>", re.S | re.I)
+_EDITS = re.compile(r"<edits>(.*?)</edits>", re.S | re.I)
 
 _T = TypeVar("_T")
 
@@ -490,13 +490,22 @@ def _distil(
     m = _EXP.search(reply.text)
     if not m:
         return {}
-    out: dict = {}
-    for line in m.group(1).strip().splitlines():
+    out: dict[str, str] = {}
+    cur_key: str | None = None
+    for raw_line in m.group(1).strip().splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        matched_key = None
         if ":" in line:
-            key, _, val = line.partition(":")
-            key = key.strip().lower()
-            if key in ("cue", "lesson", "evidence", "confidence"):
-                out[key] = val.strip()
+            k_part, _, v_part = line.partition(":")
+            norm_k = k_part.lstrip("-* ").strip("*` ").lower()
+            if norm_k in ("cue", "lesson", "evidence", "confidence"):
+                matched_key = norm_k
+                cur_key = norm_k
+                out[cur_key] = v_part.strip()
+        if matched_key is None and cur_key is not None:
+            out[cur_key] = (out[cur_key] + " " + line).strip() if out[cur_key] else line
     if not all(out.get(key) for key in ("cue", "lesson", "evidence")):
         return {}
     if edits:

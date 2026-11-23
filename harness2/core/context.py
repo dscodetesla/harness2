@@ -247,9 +247,21 @@ def _write_rollout(dest: Path, r: RunView, adapter, trunc: int, names_only: bool
 
     d = dest / "deliverables" / r.label
     d.mkdir(parents=True, exist_ok=True)
+    seen_imgs: set[str] = set()
     for img in _images(adapter, r.run_dir)[:8]:
         try:
-            t = d / "images" / Path(img).name
+            img_p = Path(img)
+            try:
+                rel_name = str(img_p.resolve().relative_to(Path(r.run_dir).resolve())).replace("/", "__")
+            except ValueError:
+                rel_name = img_p.name
+            cand_name = rel_name
+            idx = 2
+            while cand_name in seen_imgs:
+                cand_name = f"{Path(rel_name).stem}__{idx}{Path(rel_name).suffix}"
+                idx += 1
+            seen_imgs.add(cand_name)
+            t = d / "images" / cand_name
             t.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(img, t)
         except OSError:
@@ -260,11 +272,23 @@ def _write_rollout(dest: Path, r: RunView, adapter, trunc: int, names_only: bool
         (d / f"{safe}{suffix}").write_text(str(body), encoding="utf-8")
     raw_fn = getattr(adapter, "deliverable_assets", None)
     raw_names: list[str] = []
+    seen_raw: set[str] = set()
     for src in raw_fn(r.run_dir) if callable(raw_fn) else []:
-        t = d / "raw" / Path(src).name
+        src_p = Path(src)
+        try:
+            rel_raw = str(src_p.resolve().relative_to(Path(r.run_dir).resolve())).replace("/", "__")
+        except ValueError:
+            rel_raw = src_p.name
+        cand_raw = rel_raw
+        idx = 2
+        while cand_raw in seen_raw:
+            cand_raw = f"{Path(rel_raw).stem}__{idx}{Path(rel_raw).suffix}"
+            idx += 1
+        seen_raw.add(cand_raw)
+        t = d / "raw" / cand_raw
         t.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, t)
-        raw_names.append(Path(src).name)
+        raw_names.append(cand_raw)
     raw_note = (
         "\n\n`raw/` holds the binary originals of the artifacts above (same names). "
         "The rendered\n`.txt` view is CANONICAL -- it reads each artifact the way the "

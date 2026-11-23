@@ -213,6 +213,15 @@ SCRUB_ENV = frozenset(
         "AWS_SECRET_ACCESS_KEY",
         "AWS_SESSION_TOKEN",
         "AWS_BEARER_TOKEN_BEDROCK",
+        "OPENROUTER_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "HF_TOKEN",
+        "HUGGING_FACE_HUB_TOKEN",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "TAILSCALE_API_KEY",
+        "N8N_API_KEY",
     }
 )
 
@@ -233,6 +242,8 @@ _PROVIDER_KEYS = {
     "openai": ("OPENAI_API_KEY",),
     "anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"),
     "google": ("GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY", "GEMINI_API_KEY"),
+    "openrouter": ("OPENROUTER_API_KEY",),
+    "deepseek": ("DEEPSEEK_API_KEY",),
     "amazon-bedrock": (
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",

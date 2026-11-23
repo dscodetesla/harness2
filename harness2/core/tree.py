@@ -274,18 +274,24 @@ def _check_skills(surface: SurfaceSpec, tree: Tree, body: str, errs: list[str]) 
                 f"{surface.skill_dir}/{name}/SKILL.md needs a `description:` in its "
                 f"frontmatter, or the skill is dropped SILENTLY at load"
             )
-        m_name = re.search(r"^name:\s*(\S+)\s*$", fm, re.M)
+        m_name = re.search(r"^name:\s*(.+?)\s*$", fm, re.M)
+        parsed_name = None
+        if m_name:
+            raw_val = m_name.group(1).strip()
+            if len(raw_val) >= 2 and raw_val[0] == raw_val[-1] and raw_val[0] in ("'", '"'):
+                raw_val = raw_val[1:-1].strip()
+            parsed_name = raw_val
         if surface.skill_name_rule == "must_match":
-            if not (m_name and m_name.group(1) == name):
+            if not (parsed_name and parsed_name == name):
                 errs.append(
                     f"{surface.skill_dir}/{name}/SKILL.md needs frontmatter "
                     f"`name: {name}` matching its directory (a mismatch is dropped "
                     f"SILENTLY at load)"
                 )
-        elif m_name and m_name.group(1) != name:
+        elif parsed_name and parsed_name != name:
             errs.append(
                 f"{surface.skill_dir}/{name}/SKILL.md frontmatter `name: "
-                f"{m_name.group(1)}` OVERRIDES the directory name at load, so every "
+                f"{parsed_name}` OVERRIDES the directory name at load, so every "
                 f"trigger line naming `{name}` stops matching; drop the `name:` line "
                 f"or make it `name: {name}`"
             )

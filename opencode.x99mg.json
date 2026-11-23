@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama-local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "X99MG Ollama Local",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "deepseek-v4.1-flash:cloud": {
+          "name": "DeepSeek v4.1 Flash (Ollama Cloud)"
+        },
+        "glm-5.3-flash:cloud": {
+          "name": "GLM 5.3 Flash (Ollama Cloud)"
+        },
+        "gemma3:4b": {
+          "name": "Gemma 3 4B (Local)"
+        }
+      }
+    }
+  }
+}
