@@ -275,13 +275,14 @@ def parse_items(path: Path) -> list[dict]:
     for ln in raw.splitlines():
         ln = ln.strip()
 
-        if not (ln.startswith('{"type":') or ln.startswith('{"timestamp":')):
+        if not ln.startswith("{"):
             continue
         try:
             ev = json.loads(ln)
         except json.JSONDecodeError:
             continue
-        if not isinstance(ev, dict):
+        # JSON object key order and whitespace are not part of the event format.
+        if not isinstance(ev, dict) or not ("type" in ev or "timestamp" in ev):
             continue
         item = ev.get("item")
         iid = item.get("id") if isinstance(item, dict) else None

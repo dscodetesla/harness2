@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
+cd "$root"
+case "${1:-status}" in
+  status)
+    .venv/bin/python --version
+    .venv/bin/python -c 'import importlib.metadata; print("harness2", importlib.metadata.version("harness2"))'
+    git rev-parse HEAD
+    ;;
+  demo)
+    shift
+    exec .venv/bin/harness2-demo --output runs/local-demo "$@"
+    ;;
+  test)
+    exec .venv/bin/python -m unittest discover -s tests -v
+    ;;
+  *) echo 'Usage: harness2-local {status|demo [--k 2]|test}' >&2; exit 2 ;;
+esac
