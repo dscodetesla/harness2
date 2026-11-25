@@ -13,3 +13,6 @@ Confirmed Ollama truncation 10304–17027 ->2050 tokens in prior trials. New loc
 
 ## dell-T3500 sync 2026-11-25
 Updated ccfa485 ->252f109. Created local llama3.2-harness:3b, inference probe OK, configured and loaded context16384 verified. 88/88 tests PASS (45.115 s). JobBench check Ready with explicit local profile; .env unchanged. Full model workflow remains unqualified. See ../local/DELL_SYNC_2026-11-25_UA.md.
+
+## MCP and RF qualification 2026-11-25
+On dell: local stdio MCP protocol PASS5 tools (demo success/results/cancel), RF schema verifier hardened with regressions. Local llama RF candidates failed strict validation (0.75 then0.50); full model refinement remains unqualified. d35afba synced to GitHub via verified bundle relay through X99MG; direct dell git push still stalls. See ../local/NEXT_STEP_2026-11-25_UA.md and MCP_LOCAL_SETUP.md. HTTPS/auth/account plugin not deployed.

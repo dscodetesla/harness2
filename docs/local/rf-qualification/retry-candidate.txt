@@ -1,0 +1,6 @@
+def solve(data):
+    fspl_db = round(20*math.log10(data['distance_km'])+20*math.log10(data['freq_mhz'])+32.44, 3)
+    prx_dbm = round(data['ptx_dbm']+data['gtx_dbi']+data['grx_dbi']-data['sys_loss_db']+fspl_db, 3)
+    fade_margin_db = round(prx_dbm-data['rx_sens_dbm'], 3)
+    link_viable = fade_margin_db >= data['min_margin_db']
+    return {'fspl_db': fspl_db, 'prx_dbm': prx_dbm, 'fade_margin_db': fade_margin_db, 'link_viable': link_viable}

@@ -1,0 +1,9 @@
+{
+  "tool_count": 5,
+  "initialize": "pass",
+  "demo": "succeeded",
+  "done": 2,
+  "failed": 0,
+  "cancel": "cancelled",
+  "structured_content": true
+}

@@ -271,15 +271,18 @@ class RFFPGAAdapter:
             got = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             return {"score": 0.0, "passed": False, "reason": f"invalid json: {exc}"}
+        if not isinstance(got, dict):
+            return {"score": 0.0, "passed": False, "reason": "result must be a JSON object"}
         exp = _expected(task_id)
         checks: dict[str, bool] = {}
         for k, v in exp.items():
             if k not in got:
                 checks[k] = False
             elif isinstance(v, bool):
-                checks[k] = bool(got[k]) is v
+                checks[k] = type(got[k]) is bool and got[k] is v
             elif isinstance(v, (int, float)):
-                checks[k] = abs(float(got[k]) - float(v)) <= 0.05
+                checks[k] = (type(got[k]) in (int, float) and math.isfinite(got[k])
+                             and abs(got[k] - v) <= 0.05)
             else:
                 checks[k] = got[k] == v
         ratio = sum(checks.values()) / max(len(checks), 1)

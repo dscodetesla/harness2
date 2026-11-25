@@ -1,0 +1,62 @@
+{
+  "scope": "single model candidate qualification; not Harness2 Propose-Probe-Compose",
+  "model_evidence": {
+    "model": "llama3.2-harness:3b",
+    "configured_num_ctx": 16384,
+    "required_context": 16384,
+    "loaded_context_length": null,
+    "local_only": true,
+    "inference_performed": false
+  },
+  "baseline": {
+    "score": 0.5,
+    "passed": false,
+    "checks": {
+      "fspl_db": true,
+      "prx_dbm": false,
+      "fade_margin_db": false,
+      "link_viable": true
+    },
+    "expected": {
+      "fspl_db": 108.71,
+      "prx_dbm": -72.21,
+      "fade_margin_db": 47.79,
+      "link_viable": true
+    },
+    "got": {
+      "fspl_db": 108.71,
+      "prx_dbm": -69.71,
+      "fade_margin_db": 50.29,
+      "link_viable": true
+    }
+  },
+  "ast_gate": "passed",
+  "candidate": {
+    "score": 0.75,
+    "passed": false,
+    "checks": {
+      "fspl_db": true,
+      "prx_dbm": true,
+      "fade_margin_db": true,
+      "link_viable": false
+    },
+    "expected": {
+      "fspl_db": 108.71,
+      "prx_dbm": -72.21,
+      "fade_margin_db": 47.79,
+      "link_viable": true
+    },
+    "got": {
+      "fspl_db": 108.71,
+      "prx_dbm": -72.21,
+      "fade_margin_db": 47.79,
+      "link_viable": 1
+    }
+  },
+  "wall_seconds": 6.75,
+  "schema_passed": false,
+  "schema_failure": "link_viable is integer 1, expected JSON boolean",
+  "model_inference_performed": true,
+  "inference_calls": 1,
+  "prompt_supplied_formulas": true
+}
