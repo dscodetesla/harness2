@@ -10,3 +10,6 @@ X99MG: local llama3.2:3b tool-call probe PASS; two JobBench single-task sweeps r
 
 ## Context fix 2026-11-25
 Confirmed Ollama truncation 10304–17027 ->2050 tokens in prior trials. New local alias llama3.2-harness:3b runtime context16384 verified; preflight integrated. 88/88 tests PASS (40.080 s). Re-trial now performs tool use but still no artifact; full model cycle not qualified. See ../local/CONTEXT_FIX_2026-11-25_UA.md. X99MG only.
+
+## dell-T3500 sync 2026-11-25
+Updated ccfa485 ->252f109. Created local llama3.2-harness:3b, inference probe OK, configured and loaded context16384 verified. 88/88 tests PASS (45.115 s). JobBench check Ready with explicit local profile; .env unchanged. Full model workflow remains unqualified. See ../local/DELL_SYNC_2026-11-25_UA.md.
