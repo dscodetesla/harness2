@@ -100,19 +100,23 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.seconds <= 1800:
         parser.error("--seconds must be between 1 and 1800")
+    from check_local_model import check_local_model
+    evidence = check_local_model(required_context=16384)
+    args.runs_dir.mkdir(parents=True, exist_ok=True)
+    (args.runs_dir / "model-preflight.json").write_text(json.dumps(evidence, indent=2) + "\n")
     profile = {
         "enabled_providers": ["ollama-local"],
         "provider": {"ollama-local": {
             "npm": "@ai-sdk/openai-compatible",
             "options": {"baseURL": "http://127.0.0.1:11434/v1", "apiKey": "ollama"},
-            "models": {"llama3.2:3b": {"name": "Local Llama 3.2 3B",
-                "limit": {"context": 8192, "output": 1024}}}}},
+            "models": {"llama3.2-harness:3b": {"name": "Local Llama 3.2 3B",
+                "limit": {"context": 16384, "output": 1024}}}}},
         "tools": {"*": False, "read": True, "write": True, "bash": True},
         "agent": {"build": {"steps": 6}}}
     env = {**os.environ,
-        "HARNESS2_SOLVER_MODEL": "ollama-local/llama3.2:3b",
-        "HARNESS2_IMPROVER_MODEL": "ollama-local/llama3.2:3b",
-        "HARNESS2_JUDGE_MODEL": "llama3.2:3b",
+        "HARNESS2_SOLVER_MODEL": "ollama-local/llama3.2-harness:3b",
+        "HARNESS2_IMPROVER_MODEL": "ollama-local/llama3.2-harness:3b",
+        "HARNESS2_JUDGE_MODEL": "llama3.2-harness:3b",
         "HARNESS2_JUDGE_BASE_URL": "http://127.0.0.1:11434/v1",
         "HARNESS2_JUDGE_API_KEY": "ollama",
         "HARNESS2_RUNS_DIR": str(args.runs_dir.resolve()),

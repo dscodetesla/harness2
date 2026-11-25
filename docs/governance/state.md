@@ -7,3 +7,6 @@
 
 ## Update 2026-11-25
 X99MG: local llama3.2:3b tool-call probe PASS; two JobBench single-task sweeps returned base-failed / no deliverable (exit 2). Full refinement/judging remains unqualified. Added isolated local bounded supervisor with detached-worker cleanup, 80/80 tests PASS (39.798 s). Details: ../local/TRIAL_2026-11-25_UA.md. dell-T3500 remains at ccfa485; these changes have not been deployed there. No cloud model calls made in this step.
+
+## Context fix 2026-11-25
+Confirmed Ollama truncation 10304–17027 ->2050 tokens in prior trials. New local alias llama3.2-harness:3b runtime context16384 verified; preflight integrated. 88/88 tests PASS (40.080 s). Re-trial now performs tool use but still no artifact; full model cycle not qualified. See ../local/CONTEXT_FIX_2026-11-25_UA.md. X99MG only.

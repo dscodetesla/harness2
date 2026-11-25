@@ -9,11 +9,11 @@
         "apiKey": "ollama"
       },
       "models": {
-        "llama3.2:3b": {
+        "llama3.2-harness:3b": {
           "name": "Llama 3.2 3B local",
           "limit": {
-            "context": 8192,
-            "output": 2048
+            "context": 16384,
+            "output": 1024
           }
         }
       }
