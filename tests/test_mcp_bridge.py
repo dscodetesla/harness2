@@ -11,7 +11,7 @@ class MCPBridgeTests(unittest.TestCase):
     def invoke(self, envelope, code=0):
         def fake(*args, **kwargs):
             self.assertEqual(args[0], bridge.COMMAND)
-            self.assertEqual(kwargs["timeout"], 15)
+            self.assertEqual(kwargs["timeout"], 45)
             self.assertEqual(json.loads(kwargs["input"]), {"action": "status", "arguments": {}})
             self.assertNotIn("HARNESS2_MCP_RUNS_DIR", kwargs["env"])
             kwargs["stdout"].write(json.dumps(envelope).encode())
@@ -53,14 +53,16 @@ class MCPBridgeTests(unittest.TestCase):
             with self.subTest(request=request), self.assertRaises(ValueError):
                 cli.dispatch(request)
 
-    def test_five_tools_register_with_original_names(self):
+    def test_ten_tools_register_preserving_original_names(self):
         class FakeMCP:
             def __init__(self): self.names = []
             def tool(self): return lambda fn: self.names.append(fn.__name__)
         mcp = FakeMCP()
         bridge.register_tools(mcp)
         self.assertEqual(mcp.names, ["harness2_status", "harness2_start_demo", "harness2_run_status",
-                                     "harness2_results", "harness2_cancel"])
+                                     "harness2_results", "harness2_cancel", "harness2_plan_run",
+                                     "harness2_start_run", "harness2_start_judge", "harness2_report",
+                                     "harness2_start_rf_run"])
 
 
 if __name__ == "__main__":

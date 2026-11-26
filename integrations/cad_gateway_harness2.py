@@ -17,7 +17,7 @@ def _call(action: str, arguments: dict) -> dict:
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
         try:
             result = subprocess.run(COMMAND, input=payload, cwd=ROOT, env=env,
-                                    stdout=out, stderr=err, timeout=15, check=False)
+                                    stdout=out, stderr=err, timeout=45, check=False)
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError("Harness2 controller timed out; check status before retrying start") from exc
         except OSError as exc:
@@ -67,7 +67,41 @@ def harness2_cancel(run_id: str) -> dict:
     return _call("cancel", {"run_id": run_id})
 
 
+
+def harness2_plan_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+                      max_tasks: int = 1, k: int = 1, mode: str = "parallel",
+                      workers: int = 1, seconds: int = 300) -> dict:
+    """Preview exact real JobBench selection and cloud disclosure without inference."""
+    return _call("plan_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
+                 k=k, mode=mode, workers=workers, seconds=seconds))
+
+
+def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+                       max_tasks: int = 1, k: int = 1, mode: str = "parallel",
+                       workers: int = 1, seconds: int = 300, allow_cloud: bool = False) -> dict:
+    """Start bounded real JobBench refinement; cloud requires explicit allow_cloud."""
+    return _call("start_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
+                 k=k, mode=mode, workers=workers, seconds=seconds, allow_cloud=allow_cloud))
+
+
+def harness2_start_judge(run_id: str, bases: bool = False, seconds: int = 300,
+                         allow_cloud: bool = False) -> dict:
+    """Judge selected or baseline artifacts of a terminal real refinement run."""
+    return _call("start_judge", dict(run_id=run_id, bases=bases, seconds=seconds, allow_cloud=allow_cloud))
+
+
+def harness2_report(run_id: str) -> dict:
+    """Render a cached real refinement score report without model calls."""
+    return _call("report", dict(run_id=run_id))
+
+
+def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict:
+    """Start real synthetic RF core workflow; sends task/harness evidence to Ollama Cloud only with allow_cloud."""
+    return _call("start_rf_run", dict(seconds=seconds, allow_cloud=allow_cloud))
+
+
 def register_tools(mcp) -> None:
     for function in (harness2_status, harness2_start_demo, harness2_run_status,
-                     harness2_results, harness2_cancel):
+                     harness2_results, harness2_cancel, harness2_plan_run, harness2_start_run,
+                     harness2_start_judge, harness2_report, harness2_start_rf_run):
         mcp.tool()(function)

@@ -1,0 +1,61 @@
+{
+  "transport": "actual combined CAD gateway stdio",
+  "protocol_negotiation": "explicit legacy initialization compatible with gateway SDK",
+  "tool_count": 21,
+  "tool_names": [
+    "cad_environment_status",
+    "cad_list_artifacts",
+    "openscad_make_primitive",
+    "numerical_descriptive_statistics",
+    "scilab_batch_smoke_test",
+    "freecad_python_api_smoke_test",
+    "jooan_status",
+    "jooan_snapshot",
+    "jooan_record_audio",
+    "jooan_move",
+    "jooan_stop",
+    "harness2_status",
+    "harness2_start_demo",
+    "harness2_run_status",
+    "harness2_results",
+    "harness2_cancel",
+    "harness2_plan_run",
+    "harness2_start_run",
+    "harness2_start_judge",
+    "harness2_report",
+    "harness2_start_rf_run"
+  ],
+  "status": {
+    "harness2": "0.1.0",
+    "python": "3.12.14",
+    "model": {
+      "model": "llama3.2-harness:3b",
+      "configured_num_ctx": 16384,
+      "required_context": 16384,
+      "loaded_context_length": null,
+      "local_only": true,
+      "inference_performed": false
+    },
+    "active_runs": [],
+    "executable_profiles": [
+      "deterministic_demo",
+      "ollama_local",
+      "ollama_glm_cloud"
+    ],
+    "model_refinement_qualified": true,
+    "qualified_workflows": [
+      {
+        "run_id": "107f99662b4843a2a2a80da78ca4a421",
+        "task": "rf-link-433-budget",
+        "model": "glm-5.3-flash:cloud",
+        "synthetic_only": true
+      }
+    ],
+    "local_model_refinement_qualified": false
+  },
+  "plan_tasks": [
+    "data_entry_keyers/task1"
+  ],
+  "model_inference_performed": false,
+  "pass": true
+}

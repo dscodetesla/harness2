@@ -69,8 +69,10 @@ def create_app(token: str):
     server = MCPServer("Harness2 authenticated local controller")
     for function in (controller.harness2_status, controller.harness2_start_demo,
                      controller.harness2_run_status, controller.harness2_results,
-                     controller.harness2_cancel):
-        server.tool(structured_output=True)(function)
+                     controller.harness2_cancel, controller.harness2_plan_run,
+                     controller.harness2_start_run, controller.harness2_start_judge,
+                     controller.harness2_report, controller.harness2_start_rf_run):
+        server.tool(structured_output=True)(controller._sdk_tool(function))
     allowed_hosts = ["127.0.0.1:*", "localhost:*"]
     tunnel_host = os.environ.get("HARNESS2_MCP_ALLOWED_HOST")
     if tunnel_host:

@@ -1,21 +1,26 @@
 ---
 name: harness2-control
-description: Inspect Harness² on dell-T3500, run bounded deterministic demonstrations, retrieve results and cancel a run using its private MCP tools.
+description: Operate Harness² refinement, judging, reports and synthetic RF workflows on dell-T3500 through its connected MCP tools.
 ---
 
-# Harness² control
+# Harness² workflows
 
-Use the connected MCP tools for a requested Harness² operation.
-1. Call harness2_status. Report model configuration separately from model readiness. A loaded_context_length of null means the model is not loaded; it is not proof of a context error.
-2. For a requested demonstration, call harness2_start_demo with k=1 and seconds=60 unless the user requests another supported setting. This starts deterministic Python executions without model inference.
-3. Retain the returned run_id. Call harness2_run_status to inspect progress, then harness2_results for terminal evidence. Avoid tight polling; wait for a useful interval or return the run ID when the user only asked to start.
-4. For a requested stop, call harness2_cancel with that run_id. Verify cancelled or another terminal state before saying the run stopped.
-5. Report the observed state, exit code and done/failed counts. A transport success alone does not mean task success.
+Use the connected harness2 tools to execute the requested workflow. Preserve the user's task scope and existing authorization. Do not substitute a deterministic demonstration for a real requested run.
 
-The available tools are harness2_status, harness2_start_demo, harness2_run_status, harness2_results and harness2_cancel. Tool namespaces depend on the connected host; use the discovered names.
+## Inspect and plan
+Call harness2_status. For JobBench, call harness2_plan_run with an installed domain and named profile. It resolves the actual task stream without inference. Explain the selected tasks, model service, recursion budget, expected rollouts and time limit. A plan is not an executed run.
+Profiles are ollama_local and ollama_glm_cloud. The local 3B model has failed RF qualification; do not claim it is a validated engineering model.
 
-Only one demo may be active. Supported k is 1 or 2; time limit is 1–120 seconds. Invalid IDs, missing runs, unavailable host or active-run conflicts should be reported directly. Do not invent a successful result or repeat an uncertain start before checking status.
+## Execute
+Use harness2_start_run for JobBench refinement. Supported parameters are profile, domain, max_tasks, k, mode, workers and seconds; discover exact schema ranges from the tool. Retain the returned run_id.
+For the synthetic RF workflow use harness2_start_rf_run. This is actual core refinement with a numerical verifier, not the deterministic demo.
+For cloud runs, before the first inference explain that task inputs, harness files, trajectories and deliverables go to Ollama Cloud. Set allow_cloud only when authorized. Authorization for a synthetic public test does not include private project files. A time cap is not a monetary cap; do not invent provider cost.
 
-The shared engineering gateway also advertises existing CAD/camera tools. For Harness² tasks, use the five harness2 tools; other operations require a relevant user request.
+## Track, assess, report
+Call harness2_run_status and harness2_results for the returned ID. Avoid tight polling. A successful process exit or core adoption alone does not prove engineering correctness; report independent verification and stage failures as well.
+For JobBench assessment use harness2_start_judge with the source run_id and bases=true when comparing against baseline. Judge profile and namespace must match the source run. Use harness2_report to retrieve its report.
+For a requested stop use harness2_cancel and verify the terminal state.
 
-Current scope: deterministic demonstrations and environment inspection. Local 3B model RF candidates failed strict validation; model-backed Harness² refinement is not qualified and is not exposed by these tools. This plugin cannot modify the ChatGPT base model or platform instructions. It does not silently adopt generated harness changes.
+The available workflow tools are harness2_status, harness2_plan_run, harness2_start_run, harness2_start_rf_run, harness2_start_judge, harness2_report, harness2_run_status, harness2_results and harness2_cancel. harness2_start_demo is retained only for an explicitly requested connection diagnostic.
+Only use discovered tool names and schemas. Never fabricate results or retry an uncertain start without checking jobs first. The shared gateway advertises unrelated CAD/camera tools; use them only for a relevant user request.
+If ChatGPT exposes only the old CAD tools, this is a stale App tool inventory: the user must refresh the CAD CAE dell-T3500 MCP connection in ChatGPT Plugins and begin a new conversation. Changing prompt wording cannot load an absent tool. Do not claim the web integration is verified until a direct harness2 call works.

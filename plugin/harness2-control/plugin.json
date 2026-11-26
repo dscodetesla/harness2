@@ -1,24 +1,24 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "harness2-control",
-  "version": "0.1.1",
-  "description": "Control bounded Harness² demos on dell-T3500 through the existing private OpenAI Secure MCP Tunnel.",
   "author": {
     "name": "dscodetesla"
   },
-  "repository": "https://github.com/dscodetesla/harness2",
+  "description": "Operate Harness² refinement, judging, reports and RF workflows on dell-T3500 through its existing private ChatGPT App.",
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "Harness² Control",
-        "shortDescription": "Bounded Harness² runs",
-        "longDescription": "Inspect the local Harness² environment, start bounded deterministic demos, read persistent results and cancel a run. Uses the existing private engineering gateway on dell-T3500. Model-backed refinement is not qualified or exposed.",
-        "developerName": "dscodetesla",
-        "category": "Developer Tools",
         "capabilities": [],
-        "defaultPrompt": "Перевір стан Harness² і запусти обмежену демонстрацію."
+        "category": "Developer Tools",
+        "defaultPrompt": "Перевір стан Harness², покажи план і виконай робочу RF-задачу з перевіркою результату.",
+        "developerName": "tesla",
+        "displayName": "Harness² Control",
+        "longDescription": "Control Harness² on dell-T3500: inspect status, plan and start JobBench refinement runs, judge baseline and refined artifacts, read reports, launch a synthetic RF workflow, retrieve job status and cancel running jobs. Named local and configured Ollama Cloud profiles are supported. Cloud inference requires explicit authorization. Deterministic demos remain available for connection diagnostics.",
+        "shortDescription": "Harness² робочі процеси"
       },
       "apps": "./.app.json"
     }
-  }
+  },
+  "name": "harness2-control",
+  "repository": "https://github.com/dscodetesla/harness2",
+  "version": "0.2.1"
 }

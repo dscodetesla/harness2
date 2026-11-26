@@ -1,0 +1,12 @@
+{
+  "run_id": "107f99662b4843a2a2a80da78ca4a421",
+  "state": "succeeded",
+  "allow_cloud": true,
+  "kind": "rf_refinement",
+  "seconds": 200,
+  "created_at": 1795662450.3136044,
+  "pid": 30636,
+  "start_ticks": "5886011",
+  "exit_code": 0,
+  "finished_at": 1795662463.0162995
+}

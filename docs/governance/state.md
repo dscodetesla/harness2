@@ -19,3 +19,6 @@ On dell: local stdio MCP protocol PASS5 tools (demo success/results/cancel), RF 
 
 ## Private ChatGPT plugin 2026-11-26
 Harness² Control v0.1.0 created USER/PRIVATE (plugins_6b079aff80f8819180d357b313bde00e); gateway extended11->16 tools through existing secure tunnel. 104/104 tests PASS; combined protocol status/demo/results/cancel PASS. Live tunnel ready/polls/direct existing CAD call PASS. New Harness2 tool names not yet available in current ChatGPT turn; direct Harness2 chat call pending plugin selection/connection. See ../local/WEB_PLUGIN_2026-11-26_UA.md. Model refinement remains unqualified.
+
+## Operational controller 2026-11-26
+Replaced demo-only scope with10Harness2tools: actualJobBench plan/refinement/judge/report, actual syntheticRF core workflow, state/results/cancel plus diagnosticdemo. Actual MCPsyntheticRF run107f99662b4843a2a2a80da78ca4a421 succeeded/core done1 failed0/score0.5->1.0/4rollouts5cloudcalls. Scope qualification syntheticRF only, local3B stillfailed. 118/118 testsPASS52.137s; combinedgateway21toolsPASS; privateplugin0.2.1 saved. ExistingChatGPTApp still caches old6tools: user mustRefresh MCPconnection and opennewchat; directnewtoolcall notverified. Details ../local/OPERATIONAL_2026-11-26_UA.md.

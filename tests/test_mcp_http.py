@@ -87,7 +87,7 @@ class MCPHTTPTests(unittest.TestCase):
                 async with ClientSession(streams[0], streams[1]) as client:
                     await client.initialize()
                     tools = await client.list_tools()
-                    self.assertEqual(len(tools.tools), 5)
+                    self.assertEqual(len(tools.tools), 10)
                     def data(reply):
                         self.assertFalse(reply.is_error, reply.content)
                         return reply.structured_content or json.loads(reply.content[0].text)

@@ -1,0 +1,22 @@
+{
+  "tools": [
+    "harness2_status",
+    "harness2_start_demo",
+    "harness2_run_status",
+    "harness2_results",
+    "harness2_cancel",
+    "harness2_plan_run",
+    "harness2_start_run",
+    "harness2_start_judge",
+    "harness2_report",
+    "harness2_start_rf_run"
+  ],
+  "task_count": 1,
+  "cloud_disclosure": [
+    "task inputs",
+    "trajectories",
+    "harness files",
+    "deliverables"
+  ],
+  "rf_cloud_consent_rejected": true
+}
