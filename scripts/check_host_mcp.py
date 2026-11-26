@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from harness2 import config
 from harness2 import mcp_workflow as workflow
 
-EVIDENCE = ROOT / "docs/local/host-capability-evidence/dell"
+EVIDENCE = ROOT / "docs/local/host-capability-evidence" / ("dell" if os.uname().nodename == "dell-T3500" else os.uname().nodename.lower())
 TOOLS = {"host_capabilities_inventory", "host_capabilities_plan", "host_capabilities_execute"}
 CALL = {"action": "mcp_call", "parameters": {
     "server": "cad", "tool": "numerical_descriptive_statistics",
@@ -119,6 +119,11 @@ async def standalone_check(server_config, env):
 
 
 def main():
+    import argparse
+    global EVIDENCE
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=EVIDENCE)
+    EVIDENCE = parser.parse_args().output.resolve()
     evidence = {"checked_at": datetime.now(timezone.utc).isoformat(),
                 "host": os.uname().nodename, "inference_performed": False,
                 "chatgpt_plugin_required": False}
