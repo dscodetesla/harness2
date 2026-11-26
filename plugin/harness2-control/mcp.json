@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "harness2-dell": {
+      "type": "streamable-http",
+      "extensions": {
+        "com.openai": {
+          "tunnelId": "tunnel_6add73da542c819194699da8aa48b183",
+          "auth": {
+            "type": "none"
+          }
+        }
+      }
+    }
+  }
+}

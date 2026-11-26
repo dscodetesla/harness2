@@ -16,3 +16,6 @@ Updated ccfa485 ->252f109. Created local llama3.2-harness:3b, inference probe OK
 
 ## MCP and RF qualification 2026-11-25
 On dell: local stdio MCP protocol PASS5 tools (demo success/results/cancel), RF schema verifier hardened with regressions. Local llama RF candidates failed strict validation (0.75 then0.50); full model refinement remains unqualified. d35afba synced to GitHub via verified bundle relay through X99MG; direct dell git push still stalls. See ../local/NEXT_STEP_2026-11-25_UA.md and MCP_LOCAL_SETUP.md. HTTPS/auth/account plugin not deployed.
+
+## Private ChatGPT plugin 2026-11-26
+Harness² Control v0.1.0 created USER/PRIVATE (plugins_6b079aff80f8819180d357b313bde00e); gateway extended11->16 tools through existing secure tunnel. 104/104 tests PASS; combined protocol status/demo/results/cancel PASS. Live tunnel ready/polls/direct existing CAD call PASS. New Harness2 tool names not yet available in current ChatGPT turn; direct Harness2 chat call pending plugin selection/connection. See ../local/WEB_PLUGIN_2026-11-26_UA.md. Model refinement remains unqualified.

@@ -1,0 +1,288 @@
+{
+  "transport": "stdio",
+  "gateway_sdk": "1.30.0",
+  "model_inference": false,
+  "calls": [
+    {
+      "name": "harness2_status",
+      "arguments": {},
+      "result": {
+        "harness2": "0.1.0",
+        "python": "3.12.14",
+        "model": {
+          "model": "llama3.2-harness:3b",
+          "configured_num_ctx": 16384,
+          "required_context": 16384,
+          "loaded_context_length": null,
+          "local_only": true,
+          "inference_performed": false
+        },
+        "active_runs": [],
+        "executable_profiles": [
+          "deterministic_demo"
+        ],
+        "model_refinement_qualified": false
+      }
+    },
+    {
+      "name": "harness2_start_demo",
+      "arguments": {
+        "k": 1,
+        "seconds": 30
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "running",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "running",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "running",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "running",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "running",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "succeeded",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156",
+        "exit_code": 0,
+        "finished_at": 1795660523.334539
+      }
+    },
+    {
+      "name": "harness2_results",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "job": {
+          "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+          "state": "succeeded",
+          "k": 1,
+          "seconds": 30,
+          "created_at": 1795660521.7548208,
+          "pid": 4077232,
+          "start_ticks": "5693156",
+          "exit_code": 0,
+          "finished_at": 1795660523.334539
+        },
+        "demo": {
+          "domain": "accounting",
+          "n_tasks": 2,
+          "seed": null,
+          "done": 2,
+          "failed": 0,
+          "tasks": [
+            {
+              "task": "ledger-1",
+              "status": "ok",
+              "library_entries_before": {
+                "agg": 0,
+                "seq": 0
+              }
+            },
+            {
+              "task": "ledger-2",
+              "status": "ok",
+              "library_entries_before": {
+                "agg": 1,
+                "seq": 1
+              }
+            }
+          ],
+          "execution_count": 14,
+          "editor_calls": 16
+        },
+        "log_tail": "  [accounting] 1/2 ok           ledger-1\n  [accounting] 2/2 ok           ledger-2\nLocal demo: 2 tasks completed; 0 failed. /home/user/src/harness2/runs/mcp/f20174ee42c84cfc945ab9de74b90cf2/demo/demo.json\n"
+      }
+    },
+    {
+      "name": "harness2_cancel",
+      "arguments": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2"
+      },
+      "result": {
+        "run_id": "f20174ee42c84cfc945ab9de74b90cf2",
+        "state": "succeeded",
+        "k": 1,
+        "seconds": 30,
+        "created_at": 1795660521.7548208,
+        "pid": 4077232,
+        "start_ticks": "5693156",
+        "exit_code": 0,
+        "finished_at": 1795660523.334539
+      }
+    },
+    {
+      "name": "harness2_start_demo",
+      "arguments": {
+        "k": 2,
+        "seconds": 30
+      },
+      "result": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50",
+        "state": "running",
+        "k": 2,
+        "seconds": 30,
+        "created_at": 1795660523.7048721,
+        "pid": 4077384,
+        "start_ticks": "5693351"
+      }
+    },
+    {
+      "name": "harness2_cancel",
+      "arguments": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50"
+      },
+      "result": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50",
+        "state": "cancelling",
+        "k": 2,
+        "seconds": 30,
+        "created_at": 1795660523.7048721,
+        "pid": 4077384,
+        "start_ticks": "5693351"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50"
+      },
+      "result": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50",
+        "state": "running",
+        "k": 2,
+        "seconds": 30,
+        "created_at": 1795660523.7048721,
+        "pid": 4077384,
+        "start_ticks": "5693351"
+      }
+    },
+    {
+      "name": "harness2_run_status",
+      "arguments": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50"
+      },
+      "result": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50",
+        "state": "cancelled",
+        "k": 2,
+        "seconds": 30,
+        "created_at": 1795660523.7048721,
+        "pid": 4077384,
+        "start_ticks": "5693351",
+        "exit_code": 124,
+        "finished_at": 1795660524.0523372
+      }
+    },
+    {
+      "name": "harness2_results",
+      "arguments": {
+        "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50"
+      },
+      "result": {
+        "job": {
+          "run_id": "3f21c8d17b6d478e9c3ea36568fe8d50",
+          "state": "cancelled",
+          "k": 2,
+          "seconds": 30,
+          "created_at": 1795660523.7048721,
+          "pid": 4077384,
+          "start_ticks": "5693351",
+          "exit_code": 124,
+          "finished_at": 1795660524.0523372
+        },
+        "log_tail": ""
+      }
+    }
+  ],
+  "protocol_version": "2025-11-25",
+  "tools": [
+    "cad_environment_status",
+    "cad_list_artifacts",
+    "freecad_python_api_smoke_test",
+    "harness2_cancel",
+    "harness2_results",
+    "harness2_run_status",
+    "harness2_start_demo",
+    "harness2_status",
+    "jooan_move",
+    "jooan_record_audio",
+    "jooan_snapshot",
+    "jooan_status",
+    "jooan_stop",
+    "numerical_descriptive_statistics",
+    "openscad_make_primitive",
+    "scilab_batch_smoke_test"
+  ],
+  "passed": true
+}

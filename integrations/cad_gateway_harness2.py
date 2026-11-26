@@ -1,0 +1,73 @@
+"""Five typed tools for the existing CAD FastMCP gateway; no SDK dependency here."""
+from __future__ import annotations
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+ROOT = Path("/home/user/src/harness2")
+COMMAND = [str(ROOT / ".venv-mcp/bin/python"), "-m", "harness2.mcp_control_cli"]
+MAX_OUTPUT = 262144
+
+
+def _call(action: str, arguments: dict) -> dict:
+    payload = json.dumps({"action": action, "arguments": arguments}).encode()
+    env = {key: os.environ[key] for key in ("PATH", "HOME", "LANG", "LC_ALL") if key in os.environ}
+    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+        try:
+            result = subprocess.run(COMMAND, input=payload, cwd=ROOT, env=env,
+                                    stdout=out, stderr=err, timeout=15, check=False)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("Harness2 controller timed out; check status before retrying start") from exc
+        except OSError as exc:
+            raise RuntimeError("Harness2 controller could not start") from exc
+        out.seek(0)
+        raw = out.read(MAX_OUTPUT + 1)
+        if len(raw) > MAX_OUTPUT:
+            raise RuntimeError("Harness2 controller output exceeds limit")
+        try:
+            envelope = json.loads(raw)
+        except (ValueError, UnicodeError) as exc:
+            raise RuntimeError("Harness2 controller returned invalid JSON") from exc
+        if not isinstance(envelope, dict):
+            raise RuntimeError("Harness2 controller returned invalid envelope")
+        if result.returncode != 0 or envelope.get("ok") is not True:
+            error = envelope.get("error", {})
+            message = error.get("message", "Controller failed") if isinstance(error, dict) else "Controller failed"
+            raise RuntimeError(f"Harness2: {str(message)[:1000]}")
+        value = envelope.get("result")
+        if not isinstance(value, dict):
+            raise RuntimeError("Harness2 controller returned invalid result")
+        return value
+
+
+def harness2_status() -> dict:
+    """Read Harness² versions, local model metadata and active demo jobs; no inference."""
+    return _call("status", {})
+
+
+def harness2_start_demo(k: int = 1, seconds: int = 60) -> dict:
+    """Start one bounded deterministic Harness² demo; no model or cloud calls."""
+    return _call("start_demo", {"k": k, "seconds": seconds})
+
+
+def harness2_run_status(run_id: str) -> dict:
+    """Read persisted state for the run_id returned by harness2_start_demo."""
+    return _call("run_status", {"run_id": run_id})
+
+
+def harness2_results(run_id: str) -> dict:
+    """Read a bounded demo report and log tail for a returned run_id."""
+    return _call("results", {"run_id": run_id})
+
+
+def harness2_cancel(run_id: str) -> dict:
+    """Request cancellation of this controller's verified demo worker."""
+    return _call("cancel", {"run_id": run_id})
+
+
+def register_tools(mcp) -> None:
+    for function in (harness2_status, harness2_start_demo, harness2_run_status,
+                     harness2_results, harness2_cancel):
+        mcp.tool()(function)

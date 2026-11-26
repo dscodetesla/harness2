@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "harness2-control",
+  "version": "0.1.0",
+  "description": "Control bounded Harness² demos on dell-T3500 through the existing private OpenAI Secure MCP Tunnel.",
+  "author": {
+    "name": "dscodetesla"
+  },
+  "repository": "https://github.com/dscodetesla/harness2",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Harness² Control",
+        "shortDescription": "Bounded Harness² runs",
+        "longDescription": "Inspect the local Harness² environment, start bounded deterministic demos, read persistent results and cancel a run. Uses the existing private engineering gateway on dell-T3500. Model-backed refinement is not qualified or exposed.",
+        "developerName": "dscodetesla",
+        "category": "Developer Tools",
+        "capabilities": [],
+        "defaultPrompt": "Перевір стан Harness² і запусти обмежену демонстрацію."
+      }
+    }
+  }
+}
