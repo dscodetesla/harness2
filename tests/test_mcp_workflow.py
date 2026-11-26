@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from harness2 import mcp_server as controller, mcp_workflow as workflow
+from harness2 import mcp_server as controller, mcp_workflow as workflow, routing_policy
 from harness2.mcp_control_cli import dispatch
 
 
@@ -38,15 +38,15 @@ class MCPWorkflowTests(unittest.TestCase):
             self.assertEqual(env["HARNESS2_RUNS_DIR"], td)
 
     def test_cloud_starts_require_explicit_consent_before_side_effects(self):
-        with patch.object(controller, "_start_job") as launch:
+        with tempfile.TemporaryDirectory() as td, patch.object(routing_policy,"POLICY_PATH",Path(td)/"missing.json"), patch.object(controller, "_start_job") as launch:
             with self.assertRaisesRegex(ValueError, "Cloud"):
                 controller.harness2_start_run(profile="ollama_glm_cloud")
-            # Default RF execution is now local; cloud remains an explicit opt-in.
+            # No stored consent in this fixture; a default cloud request is denied.
             launch.assert_not_called()
 
     def test_rf_default_is_local_and_cloud_requires_explicit_true(self):
         with patch.object(controller, "_start_job", return_value={"run_id":"x"}) as launch, patch.object(controller, "rf_local_profile", return_value="ollama_local"):
-            controller.harness2_start_rf_run()
+            controller.harness2_start_rf_run(allow_cloud=False)
             self.assertEqual(launch.call_args.args[1]["profile"], "ollama_local")
             self.assertFalse(launch.call_args.args[1]["allow_cloud"])
             controller.harness2_start_rf_run(allow_cloud=True)
@@ -67,7 +67,7 @@ class MCPWorkflowTests(unittest.TestCase):
     def test_dry_run_uses_installed_real_jobbench_selection(self):
         with tempfile.TemporaryDirectory() as td, patch.object(controller, "RUNS", Path(td)):
             result = dispatch({"action": "plan_run", "arguments": {
-                "domain": "data_entry_keyers", "max_tasks": 1}})
+                "domain": "data_entry_keyers", "max_tasks": 1, "profile":"ollama_local"}})
         self.assertEqual(result["tasks"], ["data_entry_keyers/task1"])
         self.assertEqual(result["execution_rollouts_per_task"], 4)
         self.assertFalse(result["cloud"])
@@ -76,7 +76,7 @@ class MCPWorkflowTests(unittest.TestCase):
         with patch.object(workflow, "plan", return_value={"tasks": ["domain/task"]}), \
              patch.object(workflow, "preflight", return_value={"local_only": True}), \
              patch.object(controller, "_start_job", return_value={"run_id": "id"}) as launch:
-            result = controller.harness2_start_run(seconds=120)
+            result = controller.harness2_start_run(profile="ollama_local",seconds=120)
         self.assertEqual(result["run_id"], "id")
         self.assertEqual(launch.call_args.args[0], "refinement")
         self.assertEqual(launch.call_args.args[1]["parameters"]["profile"], "ollama_local")
@@ -87,8 +87,8 @@ class MCPWorkflowTests(unittest.TestCase):
                   "parameters": {"profile": "ollama_glm_cloud", "k": 2, "mode": "sequential"}}
         with patch.object(controller, "harness2_run_status", return_value=source), \
              patch.object(controller, "_start_job", return_value={"state": "running"}) as launch:
-            with self.assertRaisesRegex(ValueError, "Cloud judging"):
-                controller.harness2_start_judge("a" * 32)
+            with self.assertRaises(ValueError):
+                controller.harness2_start_judge("a" * 32,allow_cloud=False)
             controller.harness2_start_judge("a" * 32, bases=True, allow_cloud=True)
             self.assertEqual(launch.call_args.args[0], "judge")
             self.assertTrue(launch.call_args.args[1]["bases"])

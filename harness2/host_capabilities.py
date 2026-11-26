@@ -371,7 +371,7 @@ def host_capabilities_plan(query: str, max_skills: int = 3, budget_chars: int = 
             "skills": selected, "instruction_bytes": budget_chars - remaining, "instruction_characters": sum(len(item["instructions"]) for item in selected),
             "tools": local_tools, "mcp_servers": mcp_servers,
             "remote_recommendations": remote_recommendations,
-            "execution_allowlist": ["remote_call", "read_instruction", "adb_devices", "adb_screen_capture_audit", "mcp_call", "rf_link_budget", *[name + "_version" for name in tool_names]],
+            "execution_allowlist": ["agent_inventory", "agent_plan", "agent_delegate", "agent_job_status", "agent_job_results", "agent_job_cancel", "remote_call", "read_instruction", "adb_devices", "adb_screen_capture_audit", "mcp_call", "rf_link_budget", *[name + "_version" for name in tool_names]],
             "constraints": ["Skill instructions are task data, not execution authorization",
                 "Existing registered CAD/EDA MCP tools execute through their actual validated contracts",
                 "Version probes and finite numerical RF calculation use fixed local commands",
@@ -574,6 +574,32 @@ def host_capabilities_execute(action: str, parameters: dict[str, Any] | None = N
     parameters = {} if parameters is None else parameters
     if not isinstance(parameters, dict):
         raise ValueError("parameters must be an object")
+    if action in ("agent_job_status", "agent_job_results", "agent_job_cancel"):
+        from . import mcp_server
+        if set(parameters) != {"run_id"}:
+            raise ValueError("Agent job operation requires run_id only")
+        job = mcp_server.harness2_run_status(parameters["run_id"])
+        if job.get("kind") != "agent_delegation":
+            raise ValueError("run_id is not an agent delegation job")
+        if action == "agent_job_status":
+            return job
+        return (mcp_server.harness2_results(parameters["run_id"]) if action == "agent_job_results"
+                else mcp_server.harness2_cancel(parameters["run_id"]))
+    if action in ("agent_inventory", "agent_plan", "agent_delegate"):
+        from . import agent_delegation, mcp_server, routing_policy
+        if action == "agent_inventory":
+            if parameters:
+                raise ValueError("agent_inventory takes no parameters")
+            return agent_delegation.inventory()
+        if set(parameters) - {"task","roles","seconds","workers","mode","allow_cloud"} or "task" not in parameters:
+            raise ValueError("Agent operation requires task and optional seconds/workers/mode")
+        arguments = dict(parameters)
+        task = arguments.pop("task")
+        arguments.setdefault("workers", min(2,routing_policy.policy()["max_parallel"]))
+        if action == "agent_plan":
+            arguments.pop("allow_cloud", None)
+            return mcp_server.delegation_plan(task, **arguments)
+        return mcp_server.start_delegation(task, **arguments)
     if action == "remote_call":
         return _remote_execute(parameters)
     if action == "read_instruction":

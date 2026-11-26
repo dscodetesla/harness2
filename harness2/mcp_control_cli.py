@@ -17,7 +17,7 @@ ACTIONS = {
     "report": (controller.harness2_report, {"run_id"}),
     "start_rf_run": (controller.harness2_start_rf_run, {"seconds", "allow_cloud"}),
 }
-MAX_INPUT = 8192
+MAX_INPUT = 32768
 
 
 def dispatch(request):
@@ -46,7 +46,7 @@ def main():
     try:
         raw = sys.stdin.buffer.read(MAX_INPUT + 1)
         if len(raw) > MAX_INPUT:
-            raise ValueError("Controller request exceeds 8192 bytes")
+            raise ValueError("Controller request exceeds 32768 bytes")
         result = dispatch(json.loads(raw))
         print(json.dumps({"ok": True, "result": result}, allow_nan=False))
         return 0

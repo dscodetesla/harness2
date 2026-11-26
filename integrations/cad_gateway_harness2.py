@@ -68,24 +68,24 @@ def harness2_cancel(run_id: str) -> dict:
 
 
 
-def harness2_plan_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+def harness2_plan_run(profile: str | None = None, domain: str = "data_entry_keyers",
                       max_tasks: int = 1, k: int = 1, mode: str = "parallel",
                       workers: int = 1, seconds: int = 300, capability_query: str = "") -> dict:
-    """Preview exact real JobBench selection and cloud disclosure without inference."""
+    """Preview JobBench or agent_delegation role routing and data flow without inference."""
     return _call("plan_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
                  k=k, mode=mode, workers=workers, seconds=seconds, capability_query=capability_query))
 
 
-def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+def harness2_start_run(profile: str | None = None, domain: str = "data_entry_keyers",
                        max_tasks: int = 1, k: int = 1, mode: str = "parallel",
-                       workers: int = 1, seconds: int = 300, allow_cloud: bool = False, capability_query: str = "") -> dict:
-    """Start bounded real JobBench refinement; cloud requires explicit allow_cloud."""
+                       workers: int = 1, seconds: int = 300, allow_cloud: bool | None = None, capability_query: str = "") -> dict:
+    """Start JobBench or agent_delegation using saved routing authorization; explicit False forbids cloud."""
     return _call("start_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
                  k=k, mode=mode, workers=workers, seconds=seconds, allow_cloud=allow_cloud, capability_query=capability_query))
 
 
 def harness2_start_judge(run_id: str, bases: bool = False, seconds: int = 300,
-                         allow_cloud: bool = False) -> dict:
+                         allow_cloud: bool | None = None) -> dict:
     """Judge selected or baseline artifacts of a terminal real refinement run."""
     return _call("start_judge", dict(run_id=run_id, bases=bases, seconds=seconds, allow_cloud=allow_cloud))
 
@@ -95,8 +95,8 @@ def harness2_report(run_id: str) -> dict:
     return _call("report", dict(run_id=run_id))
 
 
-def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict:
-    """Run actual RF core refinement locally by default; allow_cloud explicitly selects Ollama Cloud."""
+def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool | None = None) -> dict:
+    """Run RF refinement using saved routing policy; explicit False selects local diagnostics."""
     return _call("start_rf_run", dict(seconds=seconds, allow_cloud=allow_cloud))
 
 

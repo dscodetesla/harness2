@@ -92,7 +92,7 @@ def capability_context(parameters, output: Path):
     # Treat imported workflow material as references, not authority over the task.
     text = ("# Host engineering context\n"
             "Use host_capabilities_inventory/plan/execute for registered host operations. "
-            "Call plan to inspect registered host recommendations; use execute action "
+            "For role delegation use execute actions agent_plan and agent_delegate with a self-contained task brief. Call plan to inspect registered host recommendations; use execute action "
             "remote_call for a configured remote host when local tooling is missing. "
             "Use host_capabilities_execute action read_instruction to read referenced text files "
             "relative to a selected skill; external filesystem access is unnecessary. "

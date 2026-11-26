@@ -130,10 +130,26 @@ def harness2_status() -> dict[str, Any]:
                             "heldout": evidence.get("heldout")})
                 except (OSError, ValueError, UnicodeError):
                     pass
-    return {"harness2": importlib.metadata.version("harness2"),
-            "python": sys.version.split()[0], "model": {**model,"check_scope":"metadata_preflight_only"}, "active_runs": active,
+    from . import routing_policy, agent_delegation
+    saved_policy = routing_policy.policy()
+    primary_model = {**model, "check_scope":"metadata_preflight_only"}
+    if saved_policy["default_profile"] == "ollama_glm_cloud":
+        primary_model = {"model":"glm-5.3-flash:cloud", "cloud":True,
+                         "check_scope":"configured_routing_policy", "inference_performed":False}
+        observed = [q for q in qualified if q.get("model") == primary_model["model"]]
+        if observed:
+            primary_model["qualified_run_evidence"] = observed[-1]["run_id"]
+    return {"routing_policy": saved_policy,
+            "workflow_domains": ["jobbench", "agent_delegation"],
+            "agent_routes": agent_delegation.inventory()["routes"],
+            "local_model_diagnostics": {**model,"optional":True},
+            "harness2": importlib.metadata.version("harness2"),
+            "python": sys.version.split()[0], "model": primary_model, "active_runs": active,
             "model_runs": inference_history[-20:],
-            "rf_profile": rf_profile, "rf_model": {**rf_preflight,"check_scope":"metadata_preflight_only"},
+            "rf_profile": saved_policy["default_profile"] if saved_policy["default_profile"] == "ollama_glm_cloud" else rf_profile,
+            "rf_model": primary_model if saved_policy["default_profile"] == "ollama_glm_cloud" else {**rf_preflight,"check_scope":"metadata_preflight_only"},
+            "rf_local_profile": rf_profile, "rf_local_model_diagnostics": rf_preflight,
+            "local_profiles_are_opt_in_only": True,
             "executable_profiles": ["deterministic_demo", "ollama_local", "ollama_gemma_local", "ollama_glm_cloud"],
             "model_refinement_qualified": bool(qualified),
             "qualified_workflows": qualified[-20:], "local_model_refinement_qualified": any(q.get("local_only") is True and q.get("model") == rf_model and isinstance(q.get("heldout"), dict) and q["heldout"].get("qualified") is True for q in qualified)}
@@ -171,23 +187,64 @@ def _start_job(kind: str, parameters: dict, seconds: int) -> dict[str, Any]:
         return job
 
 
-def harness2_plan_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+def delegation_plan(task, *, workers=2, seconds=180, mode="parallel", roles=None):
+    from . import agent_delegation, routing_policy
+    if type(workers) is not int or not 1 <= workers <= 2:
+        raise ValueError("Delegation workers must be 1 or 2")
+    if type(seconds) is not int or not 1 <= seconds <= 600:
+        raise ValueError("Delegation seconds must be 1..600")
+    if mode not in ("parallel","sequential"):
+        raise ValueError("Delegation mode must be parallel or sequential")
+    result = agent_delegation.plan(task, roles=roles or ["planner","implementer","reviewer"])
+    result.update(kind="agent_delegation", max_parallel=workers if mode=="parallel" else 1,
+                  seconds=seconds, routing_policy=routing_policy.policy())
+    return result
+
+
+def start_delegation(task, *, roles=None, workers=2, seconds=180,
+                     mode="parallel", allow_cloud=None, _routing_source=None):
+    from . import routing_policy
+    selected = routing_policy.selection(allow_cloud=allow_cloud)
+    if not selected["allow_cloud"]:
+        raise ValueError("Native CLI delegation requires cloud/subscription authorization")
+    plan = delegation_plan(task, roles=roles, workers=workers, seconds=seconds, mode=mode)
+    return _start_job("agent_delegation", {"task": task,
+        "roles": [item["role"] for item in plan["roles"]],
+        "max_parallel": plan["max_parallel"], "allow_cloud": True,
+        "routing_source": _routing_source or selected["source"]}, seconds)
+
+
+def harness2_plan_run(profile: str | None = None, domain: str = "data_entry_keyers",
                       max_tasks: int = 1, k: int = 1, mode: str = "parallel",
                       workers: int = 1, seconds: int = 300, capability_query: str = "") -> dict[str, Any]:
     """Preview exact JobBench task stream and cloud data disclosure, without inference."""
     from . import mcp_workflow as workflow
+    from . import routing_policy
+    profile = profile or routing_policy.policy()["default_profile"]
+    if domain == "agent_delegation":
+        if type(k) is not int or k != 1 or type(max_tasks) is not int or max_tasks != 1:
+            raise ValueError("agent_delegation accepts one parent task and one role batch")
+        return delegation_plan(capability_query, workers=workers, seconds=seconds, mode=mode)
     parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds, capability_query)
     return workflow.plan(parameters, RUNS / "_plans" / profile)
 
 
-def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
+def harness2_start_run(profile: str | None = None, domain: str = "data_entry_keyers",
                        max_tasks: int = 1, k: int = 1, mode: str = "parallel",
                        workers: int = 1, seconds: int = 300,
-                       allow_cloud: bool = False, capability_query: str = "") -> dict[str, Any]:
+                       allow_cloud: bool | None = None, capability_query: str = "") -> dict[str, Any]:
     """Start real bounded JobBench refinement. Cloud requires explicit allow_cloud."""
     from . import mcp_workflow as workflow
-    if type(allow_cloud) is not bool:
-        raise ValueError("allow_cloud must be boolean")
+    from . import routing_policy
+    selected = routing_policy.selection(profile, allow_cloud)
+    profile, allow_cloud = selected["profile"], selected["allow_cloud"]
+    if domain == "agent_delegation":
+        if not allow_cloud:
+            raise ValueError("Configured CLI delegation uses cloud/subscription providers; explicit cloud denial is respected")
+        if type(k) is not int or k != 1 or type(max_tasks) is not int or max_tasks != 1:
+            raise ValueError("agent_delegation accepts one parent task and one role batch")
+        return start_delegation(capability_query, workers=workers, seconds=seconds,
+            mode=mode, allow_cloud=allow_cloud, _routing_source=selected["source"])
     parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds, capability_query)
     if workflow.PROFILES[profile]["cloud"] and not allow_cloud:
         raise ValueError("Cloud sends task inputs, trajectories, harnesses and deliverables to Ollama Cloud; review plan_run and explicitly allow_cloud")
@@ -198,14 +255,16 @@ def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_
 
 
 def harness2_start_judge(run_id: str, bases: bool = False, seconds: int = 300,
-                         allow_cloud: bool = False) -> dict[str, Any]:
+                         allow_cloud: bool | None = None) -> dict[str, Any]:
     """Judge one terminal refinement using its original profile/namespace; bases compares references."""
     from . import mcp_workflow as workflow
     source = harness2_run_status(run_id)
     if source.get("kind") != "refinement" or source["state"] in ("starting", "running", "cancelling"):
         raise ValueError("run_id must identify a terminal refinement job")
-    if type(bases) is not bool or type(allow_cloud) is not bool:
-        raise ValueError("bases and allow_cloud must be boolean")
+    if type(bases) is not bool:
+        raise ValueError("bases must be boolean")
+    from . import routing_policy
+    allow_cloud = routing_policy.selection(source["parameters"]["profile"], allow_cloud)["allow_cloud"]
     if type(seconds) is not int or not 1 <= seconds <= 3600:
         raise ValueError("seconds must be between 1 and 3600")
     if workflow.PROFILES[source["parameters"]["profile"]]["cloud"] and not allow_cloud:
@@ -230,10 +289,11 @@ def harness2_report(run_id: str) -> dict[str, Any]:
             "model_calls": False}
 
 
-def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict[str, Any]:
-    """Run actual RF core refinement locally by default; explicit allow_cloud selects cloud."""
-    if type(allow_cloud) is not bool:
-        raise ValueError("allow_cloud must be boolean")
+def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool | None = None) -> dict[str, Any]:
+    """Run RF refinement using saved routing preference; explicit False selects local diagnostics."""
+    from . import routing_policy
+    selected = routing_policy.selection(allow_cloud=allow_cloud)
+    allow_cloud = selected["allow_cloud"]
     if type(seconds) is not int or not 1 <= seconds <= 300:
         raise ValueError("seconds must be between 1 and 300")
     script = ROOT / "scripts" / "run_rf_workflow.py"
@@ -275,7 +335,7 @@ def harness2_results(run_id: str) -> dict[str, Any]:
                     entry["state"] = "omitted_size_budget"
                 else:
                     if artifact == rf:
-                        result["rf_workflow"] = data
+                        result["agent_delegation" if job.get("kind") == "agent_delegation" else "rf_workflow"] = data
                     else:
                         result["summaries"].append({"path": entry["path"], "summary": data})
                     remaining -= size
@@ -334,6 +394,9 @@ def _worker(run_id: str) -> int:
             output = (_directory(job["source_run_id"]) / "workflow"
                       if kind == "judge" else directory / "workflow")
             argv = workflow.supervised_command(job["parameters"], output, kind, job.get("bases", False))
+            environment = os.environ.copy()
+        elif kind == "agent_delegation":
+            argv = [sys.executable, "-m", "harness2.delegation_worker", "--run-id", run_id]
             environment = os.environ.copy()
         elif kind == "rf_refinement":
             argv = [sys.executable, str(ROOT / "scripts" / "run_rf_workflow.py"),
