@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "harness2-control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Control bounded Harness² demos on dell-T3500 through the existing private OpenAI Secure MCP Tunnel.",
   "author": {
     "name": "dscodetesla"
@@ -17,7 +17,8 @@
         "category": "Developer Tools",
         "capabilities": [],
         "defaultPrompt": "Перевір стан Harness² і запусти обмежену демонстрацію."
-      }
+      },
+      "apps": "./.app.json"
     }
   }
 }
