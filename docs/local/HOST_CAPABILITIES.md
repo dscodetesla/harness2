@@ -102,3 +102,30 @@ device; an already authorized device is required.
 Cloud profiles may send selected instructions and requested tool results to their
 configured provider, in addition to task/harness/trajectory data. Existing
 authorization and privacy scope apply. A time cap is not a dollar cap.
+
+## Multiple hosts
+
+A private host registry at ~/.config/harness2/hosts.json supplies cached observations
+and a scoped SSH transport. Inventory and planning read the cache without initiating
+SSH; their remote readiness is explicitly a cached observation. Plan recommends
+registered hosts with relevant verified tool versions missing locally. Confirm
+current availability with a remote inventory call before an expensive operation.
+
+~~~sh
+.venv-mcp/bin/python -m harness2.host_capabilities execute remote_call \
+  --parameters '{"host":"x99mg","operation":"inventory","arguments":{}}'
+.venv-mcp/bin/python -m harness2.host_capabilities execute remote_call \
+  --parameters '{"host":"x99mg","operation":"execute","arguments":{"action":"mcp_call","parameters":{"server":"cad","tool":"numerical_descriptive_statistics","arguments":{"values":[1,2,3,4,5]}}}}'
+~~~
+
+The deployed Dell-to-X99MG key uses a dedicated user-level OpenSSH receiver on
+Tailnet port 2222, restricted to the fixed JSON receiver command. Tailscale SSH on
+port 22 bypassed OpenSSH authorized-key restrictions, so it is not this transport.
+It provides no general SSH shell. Host keys are pinned from the target host; strict
+checking is enabled. Client private key material stays on Dell and is not tracked by Git.
+Remote recursion and unregistered hosts are rejected. The receiver calls the same
+registered operation layer used locally; copying a host name never grants access.
+
+Long-running native EDA jobs retain their own job IDs. Use their registered status
+and cancel operations; stopping the Harness controller alone is not evidence that
+a separately submitted native job has stopped.

@@ -181,5 +181,56 @@ class HostCapabilityTests(unittest.TestCase):
         self.assertIn("Other profiles are NOT_CHECKED", result["limitations"])
 
 
+    def test_cached_remote_recommendation_does_not_probe_or_claim_live_readiness(self):
+        catalog = [{"id": "x99mg", "hostname": "X99MG", "transport_configured": True,
+                    "live_verified": False, "inventory_observed_at": "recorded-time",
+                    "cached_inventory": {"ok": True, "result": {"tools": [
+                        {"tool": "vivado", "status": "version_verified"},
+                        {"tool": "kicad", "status": "version_verified"}]}}}]
+        local = [{"tool": "vivado", "status": "unavailable"}]
+        recommendations = host._remote_recommendations(["fpga"], local, catalog)
+        self.assertEqual(len(recommendations), 1)
+        self.assertEqual(recommendations[0]["tool"], "vivado")
+        self.assertFalse(recommendations[0]["live_verified"])
+        self.assertEqual(recommendations[0]["verification_recipe"]["parameters"]["arguments"]["action"], "vivado_version")
+
+    def test_remote_call_registration_missing_transport_and_recursion_gates(self):
+        with patch.object(host, "_remote_catalog", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "not configured"):
+                host.host_capabilities_execute("remote_call", {"host": "unregistered", "operation": "inventory", "arguments": {}})
+        catalog = [{"id": "x99mg", "transport_configured": False}]
+        with patch.object(host, "_remote_catalog", return_value=catalog):
+            result = host.host_capabilities_execute("remote_call", {"host": "x99mg", "operation": "inventory", "arguments": {}})
+            self.assertEqual(result["status"], "blocked")
+        with self.assertRaisesRegex(ValueError, "Recursive"):
+            host.host_capabilities_execute("remote_call", {"host": "x99mg", "operation": "execute", "arguments": {"action": "remote_call", "parameters": {}}})
+        with self.assertRaises(ValueError):
+            host.host_capabilities_execute("remote_call", {"host": "x99mg", "operation": "shell", "arguments": {}})
+
+    def test_remote_call_preserves_evidence_and_caps_oversized_result(self):
+        import sys
+        from unittest.mock import MagicMock
+        remote = types.SimpleNamespace(call=MagicMock(return_value={"ok": True,
+            "host": "x99mg", "operation": "inventory", "transport_verified": True,
+            "transport": "ssh-forced-command", "result": {"large": "x" * 140000}}))
+        with patch.object(host, "_remote_catalog", return_value=[{"id": "x99mg", "transport_configured": True}]), \
+             patch.dict(sys.modules, {"harness2.host_remote": remote}), patch("harness2.host_remote", remote, create=True):
+            result = host.host_capabilities_execute("remote_call", {"host": "x99mg", "operation": "inventory", "arguments": {}})
+        remote.call.assert_called_once_with("x99mg", "inventory", {})
+        self.assertTrue(result["result_omitted"])
+        self.assertTrue(result["transport_verified"])
+        self.assertNotIn("result", result)
+
+    def test_no_optional_remote_module_yields_empty_catalog(self):
+        import builtins
+        original = builtins.__import__
+        def optional_missing(name, globals=None, locals=None, fromlist=(), level=0):
+            if "host_remote" in fromlist:
+                raise ImportError("Optional remote adapter absent")
+            return original(name, globals, locals, fromlist, level)
+        with patch("builtins.__import__", side_effect=optional_missing):
+            self.assertEqual(host._remote_catalog(), [])
+
+
 if __name__ == "__main__":
     unittest.main()

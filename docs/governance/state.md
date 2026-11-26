@@ -22,3 +22,18 @@ Harness² Control v0.1.0 created USER/PRIVATE (plugins_6b079aff80f8819180d357b31
 
 ## Operational controller 2026-11-26
 Replaced demo-only scope with10Harness2tools: actualJobBench plan/refinement/judge/report, actual syntheticRF core workflow, state/results/cancel plus diagnosticdemo. Actual MCPsyntheticRF run107f99662b4843a2a2a80da78ca4a421 succeeded/core done1 failed0/score0.5->1.0/4rollouts5cloudcalls. Scope qualification syntheticRF only, local3B stillfailed. 118/118 testsPASS52.137s; combinedgateway21toolsPASS; privateplugin0.2.1 saved. ExistingChatGPTApp still caches old6tools: user mustRefresh MCPconnection and opennewchat; directnewtoolcall notverified. Details ../local/OPERATIONAL_2026-11-26_UA.md.
+
+
+## 2026-11-26 — Host engineering capability integration
+
+Added standalone local CAD/EDA MCP execution, source-pinned task guidance and a
+bounded instruction/reference reader. Private skill snapshots and host inventories
+are kept out of this public repository in a separate private deployment repository.
+OpenCode executor configuration connects the host MCP without ChatGPT plugin
+activation. Runtime checks exercised CAD statistics, OpenSCAD STL, Scilab, FreeCAD
+API and EDA registry on Dell and X99MG. Named remote operations use a dedicated
+user-level OpenSSH receiver on Tailnet port2222, not Tailscale SSH port22; private
+key material is not committed. Cached host observations are distinct from live
+transport/operation evidence. Native FPGA builds and physical tests remain NOT-RUN.
+Startup context preparation now runs inside the cancellation/deadline supervisor;
+an actual startup cancellation reached cancelled rather than interrupted.
