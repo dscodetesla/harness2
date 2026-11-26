@@ -41,6 +41,48 @@ class AgentDelegationTests(unittest.TestCase):
             entries["codex"]["auth_evidence"]["chatgpt_login_verified"] = False
             self.assertFalse(delegation._route_state("codex_chatgpt", entries)["ready_for_trial"])
 
+    def test_observed_launcher_pinned_under_minimal_ssh_path(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp) / ".local/bin"
+            directory.mkdir(parents=True)
+            observed = directory / "claude"
+            observed.write_text("#!/bin/sh\nexit 0\n")
+            observed.chmod(0o700)
+            with patch.object(delegation, "_cli_dirs", return_value=(directory,)), \
+                    patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}), \
+                    patch.object(delegation.shutil, "which", return_value="/different/claude"):
+                self.assertEqual(delegation._resolve_cli("claude", {"path": str(observed)}), str(observed))
+                self.assertEqual(delegation._resolve_cli("claude", {"path": str(directory / "missing")}), None)
+                with patch.object(delegation.shutil, "which", return_value=None):
+                    self.assertEqual(delegation._resolve_cli("claude"), str(observed))
+
+    def test_alternate_agents_schema_requires_matching_observed_binary(self):
+        entry = {"name": "claude", "version": "fixture", "help_evidence": [
+            {"argv": ["/observed/claude", "--help"], "exit_code": 0,
+             "excerpt": ["--tools --strict-mcp-config --mcp-config", "--output-format --permission-mode --no-session-persistence"]}],
+            "auth_status_probes": [{"argv": ["/observed/claude", "auth", "status"], "exit_code": 0,
+                "status": {"loggedIn": True, "authMethod": "claude.ai", "apiProvider": "firstParty"}}]}
+        normalized = delegation._normalize_entry(entry, "fixture-time")
+        self.assertEqual(normalized["path"], "/observed/claude")
+        self.assertTrue(normalized["auth_evidence"]["loggedIn"])
+        self.assertIn("--tools", normalized["help"]["text"])
+        entry["auth_status_probes"][0]["argv"][0] = "/other/claude"
+        self.assertEqual(delegation._normalize_entry(entry, "fixture-time")["auth_evidence"], {})
+
+    def test_evidence_accepts_agents_without_inventing_missing_help_flags(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "inventory.json"
+            path.write_text(json.dumps({"host": socket.gethostname(), "agents": [{
+                "name": "codex", "help_evidence": [{"argv": ["/observed/codex", "exec", "--help"],
+                    "exit_code": 0, "excerpt": ["--json"]}], "auth_status_probes": [{
+                    "argv": ["/observed/codex", "login", "status"], "exit_code": 0,
+                    "status": "chatgpt_login_present"}]}]}))
+            with patch.object(delegation, "EVIDENCE", path):
+                evidence = delegation._evidence()
+            self.assertTrue(evidence["codex"]["auth_evidence"]["chatgpt_login_verified"])
+            self.assertEqual(evidence["codex"]["subcommand_help"]["exec"]["text"], "--json")
+            self.assertNotIn("--sandbox", evidence["codex"]["subcommand_help"]["exec"]["text"])
+
     def test_policy_accepts_only_named_roles_registered_routes(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(delegation, "POLICY", Path(temp) / "roles.json"):
             delegation.POLICY.write_text(json.dumps({"roles": {"reviewer": "codex_chatgpt"}}))

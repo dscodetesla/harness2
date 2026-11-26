@@ -54,14 +54,84 @@ def _atomic(path: Path, value):
     temporary.replace(path)
 
 
+def _cli_dirs():
+    return (Path.home() / ".local/bin", Path.home() / ".npm-global/bin",
+            Path("/usr/local/bin"), Path("/usr/bin"), Path("/bin"))
+
+
+def _resolve_cli(name, entry=None):
+    if name not in CLI_NAMES:
+        return None
+    entry = entry or {}
+    observed = entry.get("path")
+    if observed:
+        candidate = Path(observed)
+        # Preserve the actual observed launcher, even when SSH has a minimal PATH.
+        if (candidate.is_absolute() and candidate.name == name
+                and candidate.parent in _cli_dirs() and candidate.is_file()
+                and os.access(candidate, os.X_OK)):
+            return str(candidate)
+        return None  # Never transfer binary A's login/help evidence to binary B.
+    if entry.get("_normalized_evidence"):
+        return None
+    found = shutil.which(name)
+    if found:
+        return found
+    for directory in _cli_dirs():
+        candidate = directory / name
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
+def _normalize_entry(entry, observed_at):
+    record = dict(entry)
+    alternate = "help_evidence" in entry
+    if alternate:
+        record["subcommand_help"] = {}
+        record["help"] = {}
+        launchers = []
+        for evidence in entry.get("help_evidence", []):
+            argv = evidence.get("argv", [])
+            text = evidence.get("text", evidence.get("excerpt", ""))
+            if isinstance(text, list):
+                text = "\n".join(line for line in text if isinstance(line, str))
+            help_record = {"exit_code": evidence.get("exit_code"), "text": text,
+                           "source_was_truncated": evidence.get("source_was_truncated", False)}
+            if len(argv) == 2 and argv[1] == "--help":
+                record["help"] = help_record
+                launchers.append(argv[0])
+            elif len(argv) == 3 and argv[1:] == ["exec", "--help"]:
+                record["subcommand_help"]["exec"] = help_record
+                launchers.append(argv[0])
+        record["path"] = launchers[0] if launchers and len(set(launchers)) == 1 else None
+        auth = {}
+        for evidence in entry.get("auth_status_probes", []):
+            argv = evidence.get("argv", [])
+            if not record["path"] or not argv or argv[0] != record["path"] or evidence.get("exit_code") != 0:
+                continue
+            status = evidence.get("status")
+            if entry.get("name") == "claude" and isinstance(status, dict) and argv[1:3] == ["auth", "status"]:
+                auth = {key: status[key] for key in ("loggedIn", "authMethod", "apiProvider", "subscriptionType") if key in status}
+                auth.update(exit_code=0, observed_at=observed_at,
+                    subscription_cli_login_verified=status.get("loggedIn") is True and status.get("authMethod") == "claude.ai")
+            elif entry.get("name") == "codex" and status == "chatgpt_login_present" and argv[1:] == ["login", "status"]:
+                auth = {"exit_code": 0, "chatgpt_login_verified": True, "observed_at": observed_at}
+        record["auth_evidence"] = auth
+        record["version"] = {"text": entry.get("version")}
+    record["_normalized_evidence"] = True
+    return record
+
+
 def _evidence():
     try:
         payload = json.loads(EVIDENCE.read_text())
         if not isinstance(payload, dict) or payload.get("host") != socket.gethostname():
             return {}
-        return {entry["name"]: entry for entry in payload.get("entries", [])
-                if isinstance(entry, dict) and entry.get("name") in CLI_NAMES}
-    except (OSError, ValueError, TypeError):
+        entries = payload.get("entries", payload.get("agents", []))
+        return {entry["name"]: _normalize_entry(entry, payload.get("observed_at", payload.get("checked_at")))
+                for entry in entries if isinstance(entry, dict) and entry.get("name") in CLI_NAMES}
+    except (OSError, ValueError, TypeError, AttributeError):
         return {}
 
 
@@ -135,8 +205,8 @@ def _latest_execution_states():
 
 def _route_state(name, entries, latest=None):
     spec = ROUTES[name]
-    executable = shutil.which(spec["cli"])
     entry = entries.get(spec["cli"], {})
+    executable = _resolve_cli(spec["cli"], entry)
     auth = entry.get("auth_evidence", {})
     help_text = entry.get("help", {}).get("text", "")
     status = "executable_missing"
@@ -171,8 +241,8 @@ def inventory() -> dict[str, Any]:
     latest = _latest_execution_states()
     clients = []
     for name in CLI_NAMES:
-        executable = shutil.which(name)
         known = entries.get(name, {})
+        executable = _resolve_cli(name, known)
         source = known.get("source_checkout", {})
         clients.append({"cli": name, "executable": executable, "installed_on_path": bool(executable),
             "source_checkout_available": source.get("available") is True,
@@ -305,6 +375,7 @@ def _run_role(assignment, task, output, deadline):
     _atomic(directory / "request.json", {"argv": argv, "prompt_transport": prompt_transport,
                                         "scope": "read_only_analysis"})
     env = {key: os.environ[key] for key in ("PATH", "HOME", "LANG", "LC_ALL", "SSL_CERT_FILE", "SSL_CERT_DIR") if key in os.environ}
+    env["PATH"] = os.pathsep.join(str(path) for path in _cli_dirs())
     env.update(OLLAMA_HOST="http://127.0.0.1:11434", OLLAMA_NOHISTORY="1", NO_COLOR="1", TERM="dumb")
     process = None
     reason = None
