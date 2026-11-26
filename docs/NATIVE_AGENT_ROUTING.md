@@ -6,14 +6,7 @@ This route returns role analyses and proposals. Its implementer does not modify 
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    A["Existing MCP start tool"] --> B["Persisted job supervisor"]
-    B --> C["Native CLI role workers"]
-    C --> D["Configured provider routes"]
-    D --> E["Role artifacts and manifest"]
-    E --> F["Status, results and cancellation"]
-```
+The existing MCP start tool creates a supervised job. Native CLI workers return role artifacts to the same persisted status, results and cancellation lifecycle.
 
 The MCP call returns a run ID promptly. The supervisor enforces the aggregate wall deadline and cancellation. Each role keeps its prompt, CLI output and result record under the job's `delegation/` directory. A compact report appears at `workflow/workflow.json`.
 
