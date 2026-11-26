@@ -11,7 +11,7 @@ Use discovered Harness² tools for the user's requested work. Preserve task scop
 
 Configured cloud and subscription routes are primary on dell-T3500. Read the saved routing policy and current route evidence through status/planning; honor existing cloud authorization. Local model profiles are an explicit opt-in. Do not silently replace a requested cloud/subscription job with the local 3B model or a deterministic demo.
 
-The configured native role policy assigns planner and reviewer to Ollama GLM Cloud, and implementer to the native Codex CLI with its ChatGPT login. The verifier role also uses the configured role policy when explicitly selected. Claude's Dell OAuth evidence currently indicates an expired session; it is not the primary route. Authentication repair and successful execution must be verified before treating that route as working.
+The configured native role policy assigns planner to Ollama GLM Cloud, implementer to the native Codex CLI with its ChatGPT login, and reviewer to the native Claude CLI with its first-party subscription. Resolve actual host assignments and readiness from current status/planning. Authentication status alone is insufficient: require successful execution evidence before treating a route as working.
 
 A CLI executable or login status does not establish remaining quota, billing, model access or successful inference. Other inventoried clients are not all implemented execution routes or inference-verified. The preference for subscriptions is a coordinator hint; the explicit role policy chooses the actual CLI.
 

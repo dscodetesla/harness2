@@ -1,6 +1,6 @@
 # Native CLI agent routing
 
-Harness² can delegate a supplied task to configured cloud and subscription CLI agents through its existing MCP job lifecycle. The deployed Dell policy uses Ollama GLM Cloud for planner and reviewer, and native Codex with its ChatGPT CLI login for implementer. Local model profiles are opt-in.
+Harness² can delegate a supplied task to configured cloud and subscription CLI agents through its existing MCP job lifecycle. The deployed Dell policy uses Ollama GLM Cloud for planner, native Codex with its ChatGPT CLI login for implementer, and native Claude with its first-party subscription for reviewer. Local model profiles are opt-in.
 
 This route returns role analyses and proposals. Its implementer does not modify project files, and its verifier derives acceptance conditions without running tests. The report records `engineering_validation_performed: false`. Engineering execution and acceptance require separate registered host operations and deterministic evidence.
 
@@ -84,7 +84,7 @@ Set cloud authorization only within the user's approved scope. `prefer_subscript
   "roles": {
     "planner": "ollama_cloud_glm",
     "implementer": "codex_chatgpt",
-    "reviewer": "ollama_cloud_glm",
+    "reviewer": "claude_subscription",
     "verifier": "ollama_cloud_glm"
   }
 }
