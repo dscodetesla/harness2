@@ -10,7 +10,7 @@
   },
   "apps": "./.app.json",
   "name": "harness2-control",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Operate Harness² refinement, judging, reports and RF workflows on dell-T3500 through its existing private ChatGPT App.",
   "author": {
     "name": "tesla",

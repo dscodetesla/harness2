@@ -129,3 +129,24 @@ registered operation layer used locally; copying a host name never grants access
 Long-running native EDA jobs retain their own job IDs. Use their registered status
 and cancel operations; stopping the Harness controller alone is not evidence that
 a separately submitted native job has stopped.
+
+## Local RF inference
+
+harness2_start_rf_run now performs real local inference by default when allow_cloud
+is false. Explicit allow_cloud=true retains the configured cloud profile. The
+standalone script accepts --profile ollama_local or ollama_glm_cloud; select it
+explicitly when invoking outside the controller. The fixed local alias uses a
+16384-token context and records actual request/response token and runtime metadata.
+
+Metadata preflight does not itself run inference. Inspect model_runs in status for
+actual persisted calls and their outcomes. Local numerical refinement qualification
+is derived from successful core execution plus an independent 56-case RF suite,
+not a hardcoded status or one successful process exit. Visible training feedback
+uses two separately declared cases; held-out cases are never sent to the model.
+Incorrect results keep exit code 1 and local qualification false.
+
+For the small local model, edit missions are compact stage-specific adaptations:
+real inputs, numerical function source and visible probe errors are retained;
+uneditable scaffolding and unrelated policy examples are omitted. Original missions
+and hashes of changed context representations are kept in each inference audit.
+This does not qualify the model for the unabridged upstream prompts or all RF tasks.

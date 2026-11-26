@@ -41,9 +41,18 @@ class MCPWorkflowTests(unittest.TestCase):
         with patch.object(controller, "_start_job") as launch:
             with self.assertRaisesRegex(ValueError, "Cloud"):
                 controller.harness2_start_run(profile="ollama_glm_cloud")
-            with self.assertRaisesRegex(ValueError, "Ollama Cloud"):
-                controller.harness2_start_rf_run()
+            # Default RF execution is now local; cloud remains an explicit opt-in.
             launch.assert_not_called()
+
+    def test_rf_default_is_local_and_cloud_requires_explicit_true(self):
+        with patch.object(controller, "_start_job", return_value={"run_id":"x"}) as launch:
+            controller.harness2_start_rf_run()
+            self.assertEqual(launch.call_args.args[1]["profile"], "ollama_local")
+            self.assertFalse(launch.call_args.args[1]["allow_cloud"])
+            controller.harness2_start_rf_run(allow_cloud=True)
+            self.assertEqual(launch.call_args.args[1]["profile"], "ollama_glm_cloud")
+        with self.assertRaises(ValueError):
+            controller.harness2_start_rf_run(allow_cloud="false")
 
     def test_dry_run_uses_installed_real_jobbench_selection(self):
         with tempfile.TemporaryDirectory() as td, patch.object(controller, "RUNS", Path(td)):
@@ -113,6 +122,12 @@ class MCPWorkflowTests(unittest.TestCase):
             self.assertTrue(status["model_refinement_qualified"])
             self.assertFalse(status["local_model_refinement_qualified"])
             self.assertTrue(status["qualified_workflows"][0]["synthetic_only"])
+            proof.update(local_only=True, external_model="llama3.2-harness:3b", heldout={"qualified":True,"passed":56})
+            path.write_text(json.dumps(proof))
+            self.assertTrue(controller.harness2_status()["local_model_refinement_qualified"])
+            proof["heldout"]={"qualified":False,"passed":40}
+            path.write_text(json.dumps(proof))
+            self.assertFalse(controller.harness2_status()["local_model_refinement_qualified"])
 
 
 if __name__ == "__main__":

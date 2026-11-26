@@ -9,7 +9,7 @@ Use the connected harness2 tools to execute the requested workflow. Preserve the
 
 ## Inspect and plan
 Call harness2_status. For JobBench, call harness2_plan_run with an installed domain and named profile. It resolves the actual task stream without inference. Explain the selected tasks, model service, recursion budget, expected rollouts and time limit. A plan is not an executed run.
-Profiles are ollama_local and ollama_glm_cloud. The local 3B model has failed RF qualification; do not claim it is a validated engineering model.
+Profiles are ollama_local and ollama_glm_cloud. Read live qualification from harness2_status; never hardcode the model as qualified or unqualified. The model preflight does not perform inference: inspect model_runs for actual model call history. Local RF refinement qualification requires a successful core workflow and the independent held-out suite, and applies only to that numerical RF task family.
 
 ## Host capabilities and task guidance
 For a host engineering task, set capability_query on plan_run/start_run to the concrete domain and task, such as RF Wilkinson PCB validation or Android screen capture audit. The JobBench OpenCode executor receives task-selected local skill instructions and the standalone host-engineering MCP. This host capability layer does not depend on ChatGPT plugins being enabled. It discovers installed skills, tool versions and actual local CAD/EDA MCP contracts; the snapshot includes 16 source entries and 62 skill instructions.
@@ -18,7 +18,7 @@ The dedicated synthetic RF verifier remains a numerical workflow; do not claim t
 
 ## Execute
 Use harness2_start_run for JobBench refinement. Supported parameters are profile, domain, max_tasks, k, mode, workers, seconds and capability_query; discover exact schema ranges from the tool. Retain the returned run_id.
-For the synthetic RF workflow use harness2_start_rf_run. This is actual core refinement with a numerical verifier, not the deterministic demo.
+For the synthetic RF workflow use harness2_start_rf_run. With allow_cloud=false (the default), this runs real local llama3.2-harness:3b inference. Explicit allow_cloud=true selects the configured Ollama Cloud model. The local loop feeds errors from two visible training cases back to model retries; the independent 56-case held-out suite is never sent to the model. This is actual core refinement with a numerical verifier.
 For cloud runs, before the first inference explain that task inputs, harness files, trajectories, deliverables, selected host instructions and requested host tool results go to Ollama Cloud. Set allow_cloud only when authorized. Authorization for a synthetic public test does not include private project files. A time cap is not a monetary cap; do not invent provider cost.
 
 ## Track, assess, report

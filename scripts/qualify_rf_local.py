@@ -56,11 +56,17 @@ def gate(source):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--retry-once", action="store_true", help="one correction for Boolean schema")
+    parser.add_argument("--output", type=Path, help="New evidence directory under runs/; never overwrites a prior attempt")
+    parser.add_argument("--repair-source", type=Path, help="Repair the recorded rounded-Boolean regression using its actual prior candidate")
     args = parser.parse_args()
     evidence = check_local_model()
     root = ROOT / "runs/rf-local-qualification"
     if args.retry_once:
         root = root / "retry-1"
+    if args.output:
+        root = args.output.resolve()
+        if not root.is_relative_to(ROOT / "runs"):
+            parser.error("output must be under runs/")
     if root.exists():
         raise SystemExit("Output exists; preserve prior evidence before another qualification")
     root.mkdir(parents=True)
@@ -69,7 +75,7 @@ def main():
     baseline = adapter.execute(task, None, "baseline", timeout=5)
     baseline_score = adapter.score(baseline, task)
     prompt = (
-        "Return ONLY Python source with one function def solve(data): returning a dict. "
+        "Generate one function def solve(data) returning a dict; put its complete source in the JSON field solver_source. "
         "No imports, markdown, file access, loops, helper functions, annotations or explanations. "
         "Available: math.log10 and round. Use assignments then return dict. "
         "Compute FSPL=20*log10(distance_km)+20*log10(freq_mhz)+32.44; "
@@ -82,8 +88,25 @@ def main():
         prompt += (" Correction from previous candidate: link_viable MUST be a Python bool. "
                    "Set link_viable = fade_margin_db >= data[\'min_margin_db\']; "
                    "never apply round() to a comparison or to link_viable.")
+    prompt += (" Output contract: link_viable is a native Boolean comparison; NEVER round it. "
+               "FSPL is a positive loss and must be SUBTRACTED in prx. "
+               "Compute unrounded intermediates and round only the three numeric return values. "
+               "Return a JSON object with one field solver_source containing the complete function source.")
+    if args.repair_source:
+        previous = args.repair_source.read_text()
+        parsed = gate(previous)
+        if not any(isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "link_viable" for t in n.targets)
+                   and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name) and n.value.func.id == "round"
+                   and n.value.args and isinstance(n.value.args[0], ast.Compare) for n in ast.walk(parsed)):
+            raise ValueError("repair-source must contain the observed rounded-Boolean defect")
+        prompt = ("Repair this Python function using actual validation feedback. "
+                  "Its FSPL, Prx and fade margin are correct. The only failed check is "
+                  "link_viable: round(comparison, 3) produces integer 1 instead of Boolean true. "
+                  "Preserve all numeric expressions unchanged; remove rounding from the Boolean comparison. "
+                  "Do not change signs, constants or arithmetic. Return JSON with solver_source containing "
+                  "the complete repaired function. No imports or explanations.\n" + previous)
     (root / "prompt.txt").write_text(prompt)
-    payload = {"model": MODEL, "stream": False, "messages": [{"role": "user", "content": prompt}],
+    payload = {"model": MODEL, "stream": False, "format": {"type": "object", "properties": {"solver_source": {"type": "string"}}, "required": ["solver_source"], "additionalProperties": False}, "messages": [{"role": "user", "content": prompt}],
                "options": {"num_ctx": 16384, "num_predict": 768, "temperature": 0}, "keep_alive": "5m"}
     request = urllib.request.Request("http://127.0.0.1:11434/api/chat",
         data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
@@ -97,7 +120,8 @@ def main():
         with opener.open(request, timeout=180) as response:
             result = json.load(response)
         (root / "response.json").write_text(json.dumps(result, indent=2))
-        source = result["message"]["content"].strip()
+        source = json.loads(result["message"]["content"])["solver_source"].strip()
+        summary["generation"] = {key: result.get(key) for key in ("done", "done_reason", "prompt_eval_count", "eval_count", "total_duration")}
         if source.startswith("```"):
             source = source.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         (root / "candidate.py").write_text(source + "\n")
@@ -122,6 +146,10 @@ def main():
         summary["candidate"]["passed"] = (summary["candidate"]["passed"] and summary["schema_passed"])
     except Exception as exc:
         summary["error"] = f"{type(exc).__name__}: {exc}"
+    if summary.get("candidate", {}).get("passed"):
+        from harness2.rf_validation import validate_source
+        summary["heldout"] = validate_source(source, gate=gate)
+        summary["candidate"]["passed"] = summary["candidate"]["passed"] and (summary["heldout"].get("qualified") is True)
     summary["wall_seconds"] = round(time.monotonic() - start, 3)
     (root / "summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary, indent=2))

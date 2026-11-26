@@ -96,7 +96,7 @@ def harness2_report(run_id: str) -> dict:
 
 
 def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict:
-    """Start real synthetic RF core workflow; sends task/harness evidence to Ollama Cloud only with allow_cloud."""
+    """Run actual RF core refinement locally by default; allow_cloud explicitly selects Ollama Cloud."""
     return _call("start_rf_run", dict(seconds=seconds, allow_cloud=allow_cloud))
 
 

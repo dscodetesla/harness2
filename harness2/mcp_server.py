@@ -82,29 +82,38 @@ def harness2_status() -> dict[str, Any]:
         model = {"ready": False, "error": str(exc)}
     active = []
     qualified = []
+    inference_history = []
     if RUNS.exists():
         for p in RUNS.glob("*/job.json"):
             job = harness2_run_status(p.parent.name)
             if job["state"] in ("starting", "running", "cancelling"):
                 active.append(job["run_id"])
-            if job.get("kind") == "rf_refinement" and job["state"] == "succeeded":
+            if job.get("kind") == "rf_refinement":
                 proof = p.parent / "workflow" / "workflow.json"
                 try:
                     if proof.stat().st_size > 200000:
                         continue
                     evidence = json.loads(proof.read_text())
                     core = evidence.get("core_summary", {})
-                    if (evidence.get("qualified") is True and core.get("status") == "ok"
+                    inference_history.append({"run_id":job["run_id"], "state":job["state"],
+                        "model": evidence.get("external_model"), "local_only":evidence.get("local_only", False),
+                        "inference_performed":evidence.get("model_calls",0)>0,
+                        "model_calls":evidence.get("model_calls",0), "qualified":evidence.get("qualified",False),
+                        "heldout":{k:evidence.get("heldout",{}).get(k) for k in ("qualified","case_count","passed","failed")}})
+                    if (job["state"] == "succeeded" and evidence.get("qualified") is True and core.get("status") == "ok"
                             and not core.get("errors") and evidence.get("selected_score", {}).get("passed") is True):
                         qualified.append({"run_id": job["run_id"], "task": "rf-link-433-budget",
-                            "model": evidence.get("external_model"), "synthetic_only": True})
+                            "model": evidence.get("external_model"), "synthetic_only": True,
+                            "local_only": evidence.get("local_only") is True,
+                            "heldout": evidence.get("heldout")})
                 except (OSError, ValueError, UnicodeError):
                     pass
     return {"harness2": importlib.metadata.version("harness2"),
-            "python": sys.version.split()[0], "model": model, "active_runs": active,
+            "python": sys.version.split()[0], "model": {**model,"check_scope":"metadata_preflight_only"}, "active_runs": active,
+            "model_runs": inference_history[-20:],
             "executable_profiles": ["deterministic_demo", "ollama_local", "ollama_glm_cloud"],
             "model_refinement_qualified": bool(qualified),
-            "qualified_workflows": qualified[-20:], "local_model_refinement_qualified": False}
+            "qualified_workflows": qualified[-20:], "local_model_refinement_qualified": any(q.get("local_only") is True and isinstance(q.get("heldout"), dict) and q["heldout"].get("qualified") is True for q in qualified)}
 
 
 def harness2_start_demo(k: int = 1, seconds: int = 60) -> dict[str, Any]:
@@ -199,15 +208,16 @@ def harness2_report(run_id: str) -> dict[str, Any]:
 
 
 def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict[str, Any]:
-    """Start true synthetic RF core workflow using GLM Ollama Cloud; explicit consent required."""
-    if type(allow_cloud) is not bool or not allow_cloud:
-        raise ValueError("RF workflow sends synthetic task, harness, trajectories and output to Ollama Cloud; explicitly allow_cloud")
+    """Run actual RF core refinement locally by default; explicit allow_cloud selects cloud."""
+    if type(allow_cloud) is not bool:
+        raise ValueError("allow_cloud must be boolean")
     if type(seconds) is not int or not 1 <= seconds <= 300:
         raise ValueError("seconds must be between 1 and 300")
     script = ROOT / "scripts" / "run_rf_workflow.py"
     if not script.is_file():
         raise ValueError("RF workflow script is not installed")
-    return _start_job("rf_refinement", {"allow_cloud": True}, seconds)
+    return _start_job("rf_refinement", {"allow_cloud": allow_cloud,
+                      "profile": "ollama_glm_cloud" if allow_cloud else "ollama_local"}, seconds)
 
 
 def harness2_results(run_id: str) -> dict[str, Any]:
@@ -304,7 +314,8 @@ def _worker(run_id: str) -> int:
             environment = os.environ.copy()
         elif kind == "rf_refinement":
             argv = [sys.executable, str(ROOT / "scripts" / "run_rf_workflow.py"),
-                    "--output", str(directory / "workflow"), "--seconds", str(job["seconds"])]
+                    "--output", str(directory / "workflow"), "--seconds", str(job["seconds"]),
+                    "--profile", job.get("profile", "ollama_glm_cloud")]
             environment = os.environ.copy()
         else:
             raise ValueError("Unknown persisted job kind")
