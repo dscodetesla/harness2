@@ -150,3 +150,14 @@ real inputs, numerical function source and visible probe errors are retained;
 uneditable scaffolding and unrelated policy examples are omitted. Original missions
 and hashes of changed context representations are kept in each inference audit.
 This does not qualify the model for the unabridged upstream prompts or all RF tasks.
+
+The optional RF-only ollama_gemma_local profile uses the separately installed
+Gemma3 4B alias. It needs completion for JSON/source generation, not native tool
+calling; GGUF, loopback, remote-model rejection and context checks still apply.
+Other local agent profiles retain their native-tools requirement. Select the RF
+profile explicitly with a small per-host ~/.config/harness2/rf-profile.json
+containing a profile field; cloud is not a permitted implicit local selection.
+Status.rf_model identifies this RF selection separately from JobBench metadata.
+Neither installed local model passed the recorded RF code-generation qualification;
+see the private evaluation report. Successful model invocation is not numerical
+qualification. No weights were retrained and no failing results were coerced.

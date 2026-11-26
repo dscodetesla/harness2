@@ -30,6 +30,8 @@ MODEL = "glm-5.3-flash:cloud"  # Backward-compatible default; no implicit profil
 PROFILES = {
     "ollama_local": {"model": "llama3.2-harness:3b", "local_only": True,
                      "num_ctx": 16384, "num_predict": 2048},
+    "ollama_gemma_local": {"model": "gemma3-harness:4b", "local_only": True,
+                           "num_ctx": 16384, "num_predict": 2048},
     "ollama_glm_cloud": {"model": MODEL, "local_only": False,
                          "num_ctx": None, "num_predict": 4096},
 }
@@ -197,7 +199,8 @@ class OllamaProposer(Proposer):
         self.settings = PROFILES[profile]
         self.model = self.settings["model"]
         self.local_only = self.settings["local_only"]
-        self.preflight = check_local_model(required_context=16384) if self.local_only else {
+        self.preflight = check_local_model(model=self.model, required_context=16384,
+            require_tools=self.model != "gemma3-harness:4b") if self.local_only else {
             "model": self.model, "local_only": False, "access_verified": False}
         super().__init__(ChannelSpec("opencode", "ollama-local/" + self.model))
         self.root, self.deadline = Path(root), deadline
@@ -263,7 +266,7 @@ class OllamaProposer(Proposer):
                 "Python Boolean margin >= min_margin_db. Compute with unrounded intermediate values; "
                 "round numeric output fields only. No source imports or top-level I/O belongs in solver_source. "
                 "This is domain guidance, not a measured result or an expected numeric answer.")
-        if self.profile == "ollama_local" and label.startswith("experience."):
+        if self.local_only and label.startswith("experience."):
             mission = ("Reflect on the actual supplied baseline and adopted numerical solver only. "
                 "Compare observed result values and exact solve-function edits. Only AGENTS.md and "
                 "scripts/solve_rf_fpga.py exist; the I/O wrapper and resource limits never change. "
@@ -351,8 +354,8 @@ class OllamaProposer(Proposer):
 def run(output, seconds, profile="ollama_glm_cloud"):
     output.mkdir(parents=True, exist_ok=False)
     adapter = SafeRFAdapter(output / "runs")
-    adapter.training_feedback = profile == "ollama_local"
     prop = OllamaProposer(output / "audit", time.monotonic() + max(1, seconds - 10), profile=profile)
+    adapter.training_feedback = prop.local_only
     adapter.spec = replace(adapter.spec, channels={"proposer": prop.spec, "selector": prop.spec})
     result = run_domain("rf-links", ["rf-link-433-budget"], 1, adapter=adapter, prop=prop,
         runs_root=adapter.spec.runs_root, library_root=output / "library", modes=("agg",),

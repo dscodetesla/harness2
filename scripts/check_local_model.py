@@ -7,6 +7,7 @@ import urllib.error
 import urllib.request
 
 MODEL = "llama3.2-harness:3b"
+LOCAL_ALIASES = frozenset({MODEL, "gemma3-harness:4b"})
 BASE_URL = "http://127.0.0.1:11434"
 
 
@@ -31,16 +32,23 @@ def _request(path, payload=None):
     return result
 
 
-def validate_metadata(model, metadata, required_context, loaded=None):
-    if not isinstance(required_context, int) or required_context < 1:
+def validate_metadata(model, metadata, required_context, loaded=None, *, require_tools=True):
+    if type(required_context) is not int or required_context < 1:
         raise RuntimeError("required_context must be a positive integer")
+    if not isinstance(model, str):
+        raise RuntimeError("Only registered fixed local aliases are permitted")
+    if type(require_tools) is not bool:
+        raise RuntimeError("require_tools must be boolean")
     if ":cloud" in model.lower() or metadata.get("remote_host") or metadata.get("remote_model"):
         raise RuntimeError("Cloud/remote model is not permitted")
+    if model not in LOCAL_ALIASES:
+        raise RuntimeError("Only registered fixed local aliases are permitted")
     if not metadata.get("details", {}).get("format") == "gguf":
         raise RuntimeError("Expected a locally stored GGUF model")
     capabilities = set(metadata.get("capabilities", []))
-    if not {"completion", "tools"} <= capabilities:
-        raise RuntimeError("Model must advertise completion and tools capabilities")
+    needed = {"completion", "tools"} if require_tools else {"completion"}
+    if not needed <= capabilities:
+        raise RuntimeError("Model must advertise completion and tools capabilities" if require_tools else "Model must advertise completion capability")
     parameters = metadata.get("parameters", "")
     if not isinstance(parameters, str):
         raise RuntimeError("Missing Ollama parameters")
@@ -66,23 +74,26 @@ def validate_metadata(model, metadata, required_context, loaded=None):
                 raise RuntimeError(f"Loaded runtime context={runtime} is below required {required_context}; unload/reload alias")
     return {"model": model, "configured_num_ctx": context,
             "required_context": required_context, "loaded_context_length": runtime,
-            "local_only": True, "inference_performed": False}
+            "local_only": True, "inference_performed": False,
+            "tools_required": require_tools, "native_tools_advertised": "tools" in capabilities}
 
 
-def check_local_model(model=MODEL, required_context=16384):
-    if model != MODEL:
-        raise RuntimeError(f"Only the fixed local alias {MODEL} is permitted")
+def check_local_model(model=MODEL, required_context=16384, *, require_tools=True):
+    if model not in LOCAL_ALIASES:
+        raise RuntimeError("Only registered fixed local aliases are permitted")
     metadata = _request("/api/show", {"model": model})
     loaded = _request("/api/ps")
-    return validate_metadata(model, metadata, required_context, loaded)
+    return validate_metadata(model, metadata, required_context, loaded, require_tools=require_tools)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--required-context", type=int, default=16384)
+    parser.add_argument("--model", choices=sorted(LOCAL_ALIASES), default=MODEL)
+    parser.add_argument("--completion-only", action="store_true", help="For fixed pure completion transport; does not qualify native tool calling")
     args = parser.parse_args()
     try:
-        print(json.dumps(check_local_model(required_context=args.required_context), indent=2))
+        print(json.dumps(check_local_model(model=args.model, required_context=args.required_context, require_tools=not args.completion_only), indent=2))
         return 0
     except RuntimeError as exc:
         parser.exit(1, f"Local model preflight failed: {exc}\n")

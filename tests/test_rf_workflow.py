@@ -105,7 +105,7 @@ class RFWorkflowTests(unittest.TestCase):
             (context / "task.txt").write_text("Synthetic RF task")
             with patch.object(M, "check_local_model", return_value={"configured_num_ctx": 16384, "local_only": True}) as preflight:
                 proposer = M.OllamaProposer(root / "audit", time.monotonic() + 10, profile="ollama_local")
-            preflight.assert_called_once_with(required_context=16384)
+            preflight.assert_called_once_with(model="llama3.2-harness:3b", required_context=16384, require_tools=True)
             seen = []
             class FakeLocal:
                 def open(self, request, timeout):
@@ -156,7 +156,7 @@ class RFWorkflowTests(unittest.TestCase):
 
 
     def test_local_context_excludes_wrapper_cloud_keeps_original_and_audit_matches(self):
-        for profile in ("ollama_local", "ollama_glm_cloud"):
+        for profile in ("ollama_local", "ollama_gemma_local", "ollama_glm_cloud"):
             with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp)
                 context = root / "context"
@@ -184,7 +184,7 @@ class RFWorkflowTests(unittest.TestCase):
                     text = payload["messages"][-1]["content"].split("SYNTHETIC CONTEXT FILES:\n", 1)[1].split("\n\n# FINAL TRANSPORT", 1)[0]
                     files = json.loads(text)
                     self.assertEqual(files["task.txt"], "Actual synthetic task evidence retained")
-                    if profile == "ollama_local":
+                    if M.PROFILES[profile]["local_only"]:
                         self.assertIn(M.BASE.strip(), files["solver.py"])
                         for forbidden in ("import json", "resource.setrlimit", "json.load", "sys.argv", "open("):
                             self.assertNotIn(forbidden, files["solver.py"])
@@ -259,6 +259,36 @@ class RFWorkflowTests(unittest.TestCase):
             entries = json.loads((audit / "context_representations.json").read_text())
             self.assertEqual(set(entries), M.LOCAL_UNEDITABLE_SCAFFOLDS)
             self.assertTrue(all(item["representation"] == "omitted_uneditable_upstream_scaffold" and item["original_sha256"] for item in entries.values()))
+
+
+    def test_gemma_local_profile_is_explicit_completion_only_and_audits_actual_model(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            context = root / "context"
+            context.mkdir()
+            with patch.object(M, "check_local_model", return_value={"model": "gemma3-harness:4b", "configured_num_ctx": 16384, "tools_required": False}) as preflight:
+                proposer = M.OllamaProposer(root / "audit", time.monotonic() + 10, "ollama_gemma_local")
+            preflight.assert_called_once_with(model="gemma3-harness:4b", required_context=16384, require_tools=False)
+            captured = []
+            class Gemma:
+                def open(self, request, timeout):
+                    if isinstance(request, str):
+                        return io.BytesIO(b'{"models":[{"model":"gemma3-harness:4b","context_length":16384}]}')
+                    payload = json.loads(request.data)
+                    captured.append(payload)
+                    return io.BytesIO(json.dumps({"done": True, "done_reason": "stop", "message": {"content": json.dumps({"solver_source": M.BASE, "notes": "fixture"})}}).encode())
+            with patch.object(M.urllib.request, "build_opener", return_value=Gemma()):
+                reply = proposer.call("Hypothetical PostToolUse example", context, "dom1.a1")
+            self.assertTrue(reply.ok)
+            self.assertEqual(captured[0]["model"], "gemma3-harness:4b")
+            self.assertEqual(captured[0]["options"]["num_ctx"], 16384)
+            self.assertLessEqual(captured[0]["options"]["num_predict"], 2048)
+            self.assertNotIn("tools", captured[0])
+            self.assertNotIn("PostToolUse", captured[0]["messages"][-1]["content"])
+            telemetry = json.loads((root / "audit/dom1.a1/telemetry.json").read_text())
+            self.assertEqual(telemetry["profile"], "ollama_gemma_local")
+            self.assertEqual(telemetry["model"], "gemma3-harness:4b")
+            self.assertTrue(telemetry["local_only"])
 
 
 if __name__ == "__main__":

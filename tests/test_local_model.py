@@ -72,5 +72,30 @@ class LocalModelTests(unittest.TestCase):
                 M.validate_metadata(M.MODEL, {**self.good, **changes}, 16384)
 
 
+    def test_fixed_gemma_completion_transport_can_opt_out_of_native_tools(self):
+        gemma = {**self.good, "capabilities": ["completion"]}
+        with self.assertRaisesRegex(RuntimeError, "tools"):
+            M.validate_metadata("gemma3-harness:4b", gemma, 16384)
+        result = M.validate_metadata("gemma3-harness:4b", gemma, 16384, require_tools=False)
+        self.assertFalse(result["tools_required"])
+        self.assertFalse(result["native_tools_advertised"])
+        self.assertTrue(result["local_only"])
+        with patch.object(M, "_request", side_effect=[gemma, {"models": []}]) as request:
+            result = M.check_local_model(model="gemma3-harness:4b", required_context=16384, require_tools=False)
+        request.assert_any_call("/api/show", {"model": "gemma3-harness:4b"})
+        self.assertEqual(result["model"], "gemma3-harness:4b")
+
+    def test_completion_only_still_requires_fixed_local_model_context_and_format(self):
+        for changes in ({"remote_host": "https://example.invalid"},
+                        {"details": {"format": "remote"}},
+                        {"parameters": "num_ctx 4096"},
+                        {"capabilities": []}):
+            with self.subTest(changes=changes), self.assertRaises(RuntimeError):
+                M.validate_metadata("gemma3-harness:4b", {**self.good, **changes}, 16384, require_tools=False)
+        with patch.object(M, "_request") as request, self.assertRaisesRegex(RuntimeError, "fixed"):
+            M.check_local_model("arbitrary-model", require_tools=False)
+        request.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

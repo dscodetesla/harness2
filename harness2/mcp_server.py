@@ -73,6 +73,21 @@ def harness2_run_status(run_id: str) -> dict[str, Any]:
     return job
 
 
+RF_PROFILE_FILE = Path.home() / ".config/harness2/rf-profile.json"
+RF_LOCAL_MODELS = {"ollama_local":"llama3.2-harness:3b", "ollama_gemma_local":"gemma3-harness:4b"}
+
+
+def rf_local_profile():
+    if not RF_PROFILE_FILE.exists():
+        return "ollama_local"
+    if RF_PROFILE_FILE.stat().st_size > 4096:
+        raise ValueError("RF profile configuration exceeds 4096 bytes")
+    data = json.loads(RF_PROFILE_FILE.read_text())
+    if not isinstance(data, dict) or set(data) != {"profile"} or data["profile"] not in RF_LOCAL_MODELS:
+        raise ValueError("RF profile must select one installed named local profile")
+    return data["profile"]
+
+
 def harness2_status() -> dict[str, Any]:
     """Read versions, model preflight, active jobs and scoped evidence-based qualifications; no inference."""
     check = runpy.run_path(str(ROOT / "scripts" / "check_local_model.py"))
@@ -80,6 +95,13 @@ def harness2_status() -> dict[str, Any]:
         model = check["check_local_model"](required_context=16384)
     except Exception as exc:
         model = {"ready": False, "error": str(exc)}
+    try:
+        rf_profile = rf_local_profile()
+        rf_model = RF_LOCAL_MODELS[rf_profile]
+        rf_preflight = check["check_local_model"](model=rf_model, required_context=16384,
+            require_tools=rf_profile != "ollama_gemma_local")
+    except Exception as exc:
+        rf_profile, rf_model, rf_preflight = None, None, {"ready":False,"error":str(exc)}
     active = []
     qualified = []
     inference_history = []
@@ -111,9 +133,10 @@ def harness2_status() -> dict[str, Any]:
     return {"harness2": importlib.metadata.version("harness2"),
             "python": sys.version.split()[0], "model": {**model,"check_scope":"metadata_preflight_only"}, "active_runs": active,
             "model_runs": inference_history[-20:],
-            "executable_profiles": ["deterministic_demo", "ollama_local", "ollama_glm_cloud"],
+            "rf_profile": rf_profile, "rf_model": {**rf_preflight,"check_scope":"metadata_preflight_only"},
+            "executable_profiles": ["deterministic_demo", "ollama_local", "ollama_gemma_local", "ollama_glm_cloud"],
             "model_refinement_qualified": bool(qualified),
-            "qualified_workflows": qualified[-20:], "local_model_refinement_qualified": any(q.get("local_only") is True and isinstance(q.get("heldout"), dict) and q["heldout"].get("qualified") is True for q in qualified)}
+            "qualified_workflows": qualified[-20:], "local_model_refinement_qualified": any(q.get("local_only") is True and q.get("model") == rf_model and isinstance(q.get("heldout"), dict) and q["heldout"].get("qualified") is True for q in qualified)}
 
 
 def harness2_start_demo(k: int = 1, seconds: int = 60) -> dict[str, Any]:
@@ -217,7 +240,7 @@ def harness2_start_rf_run(seconds: int = 300, allow_cloud: bool = False) -> dict
     if not script.is_file():
         raise ValueError("RF workflow script is not installed")
     return _start_job("rf_refinement", {"allow_cloud": allow_cloud,
-                      "profile": "ollama_glm_cloud" if allow_cloud else "ollama_local"}, seconds)
+                      "profile": "ollama_glm_cloud" if allow_cloud else rf_local_profile()}, seconds)
 
 
 def harness2_results(run_id: str) -> dict[str, Any]:

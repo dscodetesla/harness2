@@ -45,7 +45,7 @@ class MCPWorkflowTests(unittest.TestCase):
             launch.assert_not_called()
 
     def test_rf_default_is_local_and_cloud_requires_explicit_true(self):
-        with patch.object(controller, "_start_job", return_value={"run_id":"x"}) as launch:
+        with patch.object(controller, "_start_job", return_value={"run_id":"x"}) as launch, patch.object(controller, "rf_local_profile", return_value="ollama_local"):
             controller.harness2_start_rf_run()
             self.assertEqual(launch.call_args.args[1]["profile"], "ollama_local")
             self.assertFalse(launch.call_args.args[1]["allow_cloud"])
@@ -53,6 +53,16 @@ class MCPWorkflowTests(unittest.TestCase):
             self.assertEqual(launch.call_args.args[1]["profile"], "ollama_glm_cloud")
         with self.assertRaises(ValueError):
             controller.harness2_start_rf_run(allow_cloud="false")
+
+    def test_rf_profile_configuration_cannot_enable_cloud_implicitly(self):
+        import json
+        with tempfile.TemporaryDirectory() as td, patch.object(controller, "RF_PROFILE_FILE", Path(td)/"rf.json"):
+            self.assertEqual(controller.rf_local_profile(),"ollama_local")
+            controller.RF_PROFILE_FILE.write_text(json.dumps({"profile":"ollama_gemma_local"}))
+            self.assertEqual(controller.rf_local_profile(),"ollama_gemma_local")
+            controller.RF_PROFILE_FILE.write_text(json.dumps({"profile":"ollama_glm_cloud"}))
+            with self.assertRaises(ValueError):
+                controller.rf_local_profile()
 
     def test_dry_run_uses_installed_real_jobbench_selection(self):
         with tempfile.TemporaryDirectory() as td, patch.object(controller, "RUNS", Path(td)):
@@ -105,7 +115,7 @@ class MCPWorkflowTests(unittest.TestCase):
     def test_status_qualification_requires_successful_independent_core_evidence(self):
         import json
         with tempfile.TemporaryDirectory() as td, patch.object(controller, "RUNS", Path(td)), \
-             patch.object(controller.runpy, "run_path", return_value={"check_local_model": lambda **kw: {"local_only": True}}):
+             patch.object(controller.runpy, "run_path", return_value={"check_local_model": lambda **kw: {"local_only": True}}), patch.object(controller, "rf_local_profile", return_value="ollama_local"):
             rid = "b" * 32
             directory = Path(td) / rid
             (directory / "workflow").mkdir(parents=True)
@@ -125,6 +135,12 @@ class MCPWorkflowTests(unittest.TestCase):
             proof.update(local_only=True, external_model="llama3.2-harness:3b", heldout={"qualified":True,"passed":56})
             path.write_text(json.dumps(proof))
             self.assertTrue(controller.harness2_status()["local_model_refinement_qualified"])
+            with patch.object(controller,"rf_local_profile",return_value="ollama_gemma_local"):
+                self.assertFalse(controller.harness2_status()["local_model_refinement_qualified"])
+                proof["external_model"]="gemma3-harness:4b"
+                path.write_text(json.dumps(proof))
+                self.assertTrue(controller.harness2_status()["local_model_refinement_qualified"])
+            proof["external_model"]="llama3.2-harness:3b"
             proof["heldout"]={"qualified":False,"passed":40}
             path.write_text(json.dumps(proof))
             self.assertFalse(controller.harness2_status()["local_model_refinement_qualified"])
