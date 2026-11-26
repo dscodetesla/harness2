@@ -10,10 +10,11 @@
   },
   "apps": "./.app.json",
   "name": "harness2-control",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Operate Harness² refinement, judging, reports and RF workflows on dell-T3500 through its existing private ChatGPT App.",
   "author": {
-    "name": "dscodetesla"
+    "name": "tesla",
+    "email": "dscodetesla@gmail.com"
   },
   "keywords": [],
   "repository": "https://github.com/dscodetesla/harness2",

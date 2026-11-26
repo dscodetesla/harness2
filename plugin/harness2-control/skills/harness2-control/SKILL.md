@@ -11,10 +11,15 @@ Use the connected harness2 tools to execute the requested workflow. Preserve the
 Call harness2_status. For JobBench, call harness2_plan_run with an installed domain and named profile. It resolves the actual task stream without inference. Explain the selected tasks, model service, recursion budget, expected rollouts and time limit. A plan is not an executed run.
 Profiles are ollama_local and ollama_glm_cloud. The local 3B model has failed RF qualification; do not claim it is a validated engineering model.
 
+## Host capabilities and task guidance
+For a host engineering task, set capability_query on plan_run/start_run to the concrete domain and task, such as RF Wilkinson PCB validation or Android screen capture audit. The JobBench OpenCode executor receives task-selected local skill instructions and the standalone host-engineering MCP. This host capability layer does not depend on ChatGPT plugins being enabled. It discovers installed skills, tool versions and actual local CAD/EDA MCP contracts; the snapshot includes 16 source entries and 62 skill instructions.
+The executor can call host_capabilities_inventory, host_capabilities_plan and host_capabilities_execute. Registered operations include local MCP calls, bounded instruction/reference reading, finite RF calculations and Android evidence queries through an already authorized ADB device. Missing software, devices or service access must remain explicitly unavailable or blocked. Skill instructions alone do not prove executable capability or engineering correctness. Product Design cloud services and account permissions are not copied to hosts by copying instructions.
+The dedicated synthetic RF verifier remains a numerical workflow; do not claim that it executes all host operations. Retain the real task inputs and use a matching executor for broader engineering work.
+
 ## Execute
-Use harness2_start_run for JobBench refinement. Supported parameters are profile, domain, max_tasks, k, mode, workers and seconds; discover exact schema ranges from the tool. Retain the returned run_id.
+Use harness2_start_run for JobBench refinement. Supported parameters are profile, domain, max_tasks, k, mode, workers, seconds and capability_query; discover exact schema ranges from the tool. Retain the returned run_id.
 For the synthetic RF workflow use harness2_start_rf_run. This is actual core refinement with a numerical verifier, not the deterministic demo.
-For cloud runs, before the first inference explain that task inputs, harness files, trajectories and deliverables go to Ollama Cloud. Set allow_cloud only when authorized. Authorization for a synthetic public test does not include private project files. A time cap is not a monetary cap; do not invent provider cost.
+For cloud runs, before the first inference explain that task inputs, harness files, trajectories, deliverables, selected host instructions and requested host tool results go to Ollama Cloud. Set allow_cloud only when authorized. Authorization for a synthetic public test does not include private project files. A time cap is not a monetary cap; do not invent provider cost.
 
 ## Track, assess, report
 Call harness2_run_status and harness2_results for the returned ID. Avoid tight polling. A successful process exit or core adoption alone does not prove engineering correctness; report independent verification and stage failures as well.

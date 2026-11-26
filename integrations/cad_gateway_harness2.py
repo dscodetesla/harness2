@@ -70,18 +70,18 @@ def harness2_cancel(run_id: str) -> dict:
 
 def harness2_plan_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
                       max_tasks: int = 1, k: int = 1, mode: str = "parallel",
-                      workers: int = 1, seconds: int = 300) -> dict:
+                      workers: int = 1, seconds: int = 300, capability_query: str = "") -> dict:
     """Preview exact real JobBench selection and cloud disclosure without inference."""
     return _call("plan_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
-                 k=k, mode=mode, workers=workers, seconds=seconds))
+                 k=k, mode=mode, workers=workers, seconds=seconds, capability_query=capability_query))
 
 
 def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
                        max_tasks: int = 1, k: int = 1, mode: str = "parallel",
-                       workers: int = 1, seconds: int = 300, allow_cloud: bool = False) -> dict:
+                       workers: int = 1, seconds: int = 300, allow_cloud: bool = False, capability_query: str = "") -> dict:
     """Start bounded real JobBench refinement; cloud requires explicit allow_cloud."""
     return _call("start_run", dict(profile=profile, domain=domain, max_tasks=max_tasks,
-                 k=k, mode=mode, workers=workers, seconds=seconds, allow_cloud=allow_cloud))
+                 k=k, mode=mode, workers=workers, seconds=seconds, allow_cloud=allow_cloud, capability_query=capability_query))
 
 
 def harness2_start_judge(run_id: str, bases: bool = False, seconds: int = 300,

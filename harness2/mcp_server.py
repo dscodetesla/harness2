@@ -141,22 +141,22 @@ def _start_job(kind: str, parameters: dict, seconds: int) -> dict[str, Any]:
 
 def harness2_plan_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
                       max_tasks: int = 1, k: int = 1, mode: str = "parallel",
-                      workers: int = 1, seconds: int = 300) -> dict[str, Any]:
+                      workers: int = 1, seconds: int = 300, capability_query: str = "") -> dict[str, Any]:
     """Preview exact JobBench task stream and cloud data disclosure, without inference."""
     from . import mcp_workflow as workflow
-    parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds)
+    parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds, capability_query)
     return workflow.plan(parameters, RUNS / "_plans" / profile)
 
 
 def harness2_start_run(profile: str = "ollama_local", domain: str = "data_entry_keyers",
                        max_tasks: int = 1, k: int = 1, mode: str = "parallel",
                        workers: int = 1, seconds: int = 300,
-                       allow_cloud: bool = False) -> dict[str, Any]:
+                       allow_cloud: bool = False, capability_query: str = "") -> dict[str, Any]:
     """Start real bounded JobBench refinement. Cloud requires explicit allow_cloud."""
     from . import mcp_workflow as workflow
     if type(allow_cloud) is not bool:
         raise ValueError("allow_cloud must be boolean")
-    parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds)
+    parameters = workflow.validate(profile, domain, max_tasks, k, mode, workers, seconds, capability_query)
     if workflow.PROFILES[profile]["cloud"] and not allow_cloud:
         raise ValueError("Cloud sends task inputs, trajectories, harnesses and deliverables to Ollama Cloud; review plan_run and explicitly allow_cloud")
     plan = workflow.plan(parameters, RUNS / "_plans" / profile)
@@ -300,8 +300,8 @@ def _worker(run_id: str) -> int:
             from . import mcp_workflow as workflow
             output = (_directory(job["source_run_id"]) / "workflow"
                       if kind == "judge" else directory / "workflow")
-            argv = workflow.command(job["parameters"], kind, job.get("bases", False))
-            environment = workflow.environment(job["parameters"], output)
+            argv = workflow.supervised_command(job["parameters"], output, kind, job.get("bases", False))
+            environment = os.environ.copy()
         elif kind == "rf_refinement":
             argv = [sys.executable, str(ROOT / "scripts" / "run_rf_workflow.py"),
                     "--output", str(directory / "workflow"), "--seconds", str(job["seconds"])]

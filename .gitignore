@@ -17,3 +17,7 @@ __pycache__/
 !/dependencies/README.md
 !/dependencies/PINNED.md
 !/dependencies/ASSETS.json
+
+# Private host instruction snapshots and host inventories live in a separate private repo.
+/capabilities/plugin_sources
+/docs/local/host-capability-evidence/
